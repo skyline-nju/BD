@@ -62,6 +62,8 @@ public:
   void find_neighbor(int(*neighbor)[2]) const;
   MPI_Comm comm() const { return comm_; }
 #endif
+  int get_proc_rank() const { return proc_rank_.x + proc_rank_.y * proc_size_.x; }
+  int get_proc_size() const { return proc_size_.x * proc_size_.y; }
   const Vec_2<int>& proc_size() const { return proc_size_; }
   const Vec_2<int>& proc_rank() const { return proc_rank_; }
   const Vec_2<double>& gl_l() const { return gl_l_; }

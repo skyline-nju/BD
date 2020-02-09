@@ -30,6 +30,7 @@ void one_step(int i_step, std::vector<TNode>& p_arr, CellListNode_2<TNode>& cl,
     integrate(*it);
   }
   cl.recreate(p_arr);
+
 #ifdef USE_MPI
   communicator.comm_after_integration(p_arr, cl);
 #endif
@@ -46,13 +47,15 @@ void ini_rand(std::vector<node_t>& p_arr, int n_par_gl,
 void ini_rand(std::vector<node_t>& p_arr, int n_par_gl,
               const Vec_2<double>& gl_l, double sigma, TRan& myran,
               const Vec_2<int> &proc_size, MPI_Comm comm) {
+  int my_rank;
+  MPI_Comm_rank(comm, &my_rank);
   Grid_2 grid(gl_l, sigma, proc_size, comm);
   PeriodicDomain_2 pdm(gl_l, grid, proc_size, comm);
-  Communicator_2 communicator(pdm, grid);
 #endif
   if (n_par_gl < gl_l.x * gl_l.y / 2) {
     create_rand_2(p_arr, n_par_gl, myran, pdm);
   } else {
+    Communicator_2 communicator(pdm, grid);
     double r_cut = sigma;
     CellListNode_2<node_t> cl(pdm, grid);
     //WCAForce_2 f_pair(1., sigma);
@@ -107,17 +110,18 @@ void run_ABP(Vec_2<double>& gl_l, double phi, double Pe, double eps,
   double h0, int n_step, unsigned long long seed);
 #else
 void run_ABP(Vec_2<double>& gl_l, double phi, double Pe, double eps,
-  double h0, int n_step, unsigned long long seed, MPI_Comm comm);
+  double h0, int n_step, unsigned long long seed,
+  const Vec_2<int>& proc_size, MPI_Comm comm);
 #endif
 
 
 #ifndef USE_MPI
 void run_ABP_Amphiphilic(Vec_2<double>& gl_l, double phi, double Pe,
-                         double eps, double lambda, double C,
+                         double eps, double lambda, double C, double r_cut,
                          double h0, int n_step, unsigned long long seed);
 #else
 void run_ABP_Amphiphilic(Vec_2<double>& gl_l, double phi, double Pe,
-                         double eps, double lambda, double C, 
+                         double eps, double lambda, double C, double r_cut,
                          double h0, int n_step, unsigned long long seed,
-                         MPI_Comm comm);
+                         const Vec_2<int>& proc_size, MPI_Comm comm);
 #endif

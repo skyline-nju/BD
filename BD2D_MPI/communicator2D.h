@@ -161,6 +161,8 @@ public:
   template <typename TNode>
   void comm_after_integration(std::vector<TNode>& p_arr, CellListNode_2<TNode>& cl);
 
+  int get_rank() const { return my_rank_; }
+  MPI_Comm get_comm() const { return comm_; }
 private:
   int tot_proc_ = 1;
   int my_rank_ = 0;
@@ -181,18 +183,23 @@ private:
 template <class TDomain, class TGrid>
 Communicator_2::Communicator_2(const TDomain& dm, const TGrid& grid, double rho0, double amplification) :
   flag_comm_(dm.proc_size().x > 1, dm.proc_size().y > 1), comm_(dm.comm()) {
-  my_rank_ = dm.proc_rank().x + dm.proc_rank().y * dm.proc_size().x;
-  tot_proc_ = dm.proc_size().x * dm.proc_size().y;
+  my_rank_ = dm.get_proc_rank();
+  tot_proc_ = dm.get_proc_size();
 
   dm.find_neighbor(neighbor_);
   set_comm_shell(grid.n());
   max_buf_size_ = get_max_buf_size(rho0, amplification, dm.l());
+  if (my_rank_ == 0) {
+    std::cout << "buf size = " << max_buf_size_  << " rank = " << my_rank_ << std::endl;
+  }
   for (int i = 0; i < 4; i++) {
     buf_[i] = new double[max_buf_size_];
     buf_size_[i] = max_buf_size_;
   }
-
   vacant_pos_.reserve(max_buf_size_);
+
+  std::cout << "l = (" << dm.l().x << ", " << dm.l().y << ") o = (" 
+    <<dm.origin().x << ", " << dm.origin().y << ") for proc = " << my_rank_ << std::endl;
 }
 
 template <typename T>
@@ -215,10 +222,8 @@ int Communicator_2::get_max_buf_size(const T rho0, double amplification,
 
     int n0 = int(rho0 * area[0] * amplification);
     max_buf_size = 4 * n0;
-    int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-    if (my_rank == 0) {
+    if (my_rank_ == 0) {
       std::cout << "max area = " << area[0] << std::endl;
       std::cout << "max particle number per communication: " << n0 << " particles" << std::endl;
     }

@@ -38,11 +38,11 @@ void create_rand_2(std::vector<TPar>& p_arr, int n_gl, TRan& myran,
   } else {
     n = n_gl - n_gl / tot_proc * (tot_proc - 1);
   }
-  if (dm.proc_rank().x > 1) {
+  if (dm.proc_size().x > 1) {
     l.x -= sigma * 0.5;
     origin.x += sigma * 0.5;
   }
-  if (dm.proc_rank().y > 1) {
+  if (dm.proc_size().y > 1) {
     l.y -= sigma * 0.5;
     origin.y += sigma * 0.5;
   }
@@ -65,7 +65,10 @@ void create_rand_2(std::vector<TPar>& p_arr, int n_gl, TRan& myran,
       exit(1);
     }
   }
-
+  
+  if (my_rank == 0) {
+    std::cout << "create " << n_gl << " partiles" << std::endl;
+  }
   //for (int i = 0; i < n - 1; i++) {
   //  for (int j = i + 1; j < n; j++) {
   //    Vec_2<double> r12_vec = p_arr[j].pos - p_arr[i].pos;

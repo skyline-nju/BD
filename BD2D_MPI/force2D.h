@@ -22,6 +22,12 @@ public:
       f12_vec.y = tmp * r12_vec.y;
     }
   }
+
+  std::string get_info() const {
+    char info[200];
+    snprintf(info, 200, "spring force--k:%g", spring_const_);
+    return info;
+  }
 private:
   double spring_const_;
   double sigma_;
@@ -56,6 +62,13 @@ public:
       f12_vec.y = tmp * r12_vec.y;
     }
   }
+
+  std::string get_info() const {
+    char info[200];
+    snprintf(info, 200, "WCA--eps:%g", eps24_ / 24);
+    return info;
+  }
+
 private:
   double eps24_;
   double r_cut_square_;
@@ -97,6 +110,12 @@ public:
     }
   }
 
+  std::string get_info() const {
+    char info[100];
+    snprintf(info, 100, "Amphiphilic--C:%g,lambda:%g,r_cut:%g|WCA--eps:%g",
+             C_, lambda_, sqrt(rcut_square_AN_), eps24_ / 24);
+    return info;
+  }
 private:
   double C_;
   double lambda_;

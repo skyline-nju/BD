@@ -19,6 +19,8 @@ const std::string delimiter("\\");
 const std::string delimiter("/");
 #endif
 
+std::string add_suffix(const std::string& str, const std::string& suffix);
+
 /**
  * @brief Basic class for exporting data.
  *
@@ -26,9 +28,7 @@ const std::string delimiter("/");
  */
 class ExporterBase {
 public:
-  ExporterBase() : n_step_(0) {}
-
-  ExporterBase(int start, int n_step, int sep) : start_(start), n_step_(n_step) {
+  ExporterBase(int start, int n_step, int sep) : start_(start), n_step_(n_step), sep_(sep) {
     set_lin_frame(start, n_step, sep);
   }
 
@@ -38,7 +38,8 @@ public:
 
 protected:
   int n_step_;    // total steps to run
-  int start_ = 0; // The first step 
+  int start_ = 0; // The first step
+  int sep_;
 private:
   std::vector<int> frames_arr_; // frames that need to export
   std::vector<int>::iterator frame_iter_;
@@ -55,10 +56,9 @@ class LogExporter : public ExporterBase {
 public:
 #ifdef USE_MPI
   LogExporter(const std::string& outfile, int start, int n_step, int sep,
-    int np, MPI_Comm group_comm);
+              int np, MPI_Comm group_comm);
 #else
-  LogExporter(const std::string& outfile, int start, int n_step, int sep,
-    int np);
+  LogExporter(const std::string& outfile, int start, int n_step, int sep, int np);
 #endif
 
   ~LogExporter();
@@ -78,11 +78,14 @@ private:
 
 class XyzExporter_2 : public ExporterBase {
 public:
-
-  explicit XyzExporter_2(const std::string outfile, int start, int n_step, int sep,
-    const Vec_2<double>& gl_l)
-    : ExporterBase(start, n_step, sep), fout_(outfile), gl_l_(gl_l), sep_(sep) {}
-
+#ifndef USE_MPI
+  XyzExporter_2(const std::string &outfile, int start, int n_step, int sep,
+                const Vec_2<double>& gl_l)
+    : ExporterBase(start, n_step, sep), fout_(add_suffix(outfile, ".extxyz")), gl_l_(gl_l) {}
+#else
+  XyzExporter_2(const std::string &outfile, int start, int n_step, int sep,
+                const Vec_2<double>& gl_l, MPI_Comm group_comm);
+#endif
   template <typename TPar>
   void dump_pos(int i_step, const std::vector<TPar>& par_arr);
 
@@ -95,7 +98,6 @@ public:
 private:
   std::ofstream fout_;
   Vec_2<double> gl_l_;
-  int sep_;
 };
 
 template <typename TPar>
@@ -151,82 +153,70 @@ void XyzExporter_2::dump_pos_ori(int i_step, const std::vector<TPar>& par_arr) {
   }
 }
 
-/**
- * @brief Output snapshot as binary format.
- *
- * For each frame, the information of particles is saved as 3 * N float numbers.
- * 3 float number (x, y, theta) per particle.
- */
-class SnapExporter : public ExporterBase {
+class SnapExporter_2 : public ExporterBase {
 public:
-#ifdef USE_MPI
-  explicit SnapExporter(const std::string outfile, int start, int n_step, int sep, MPI_Comm group_comm)
-    : ExporterBase(start, n_step, sep), file_prefix_(outfile), comm_(group_comm) {}
+#ifndef USE_MPI
+  SnapExporter_2(const std::string& filename, int start, int n_step, int sep,
+                 const char* fileinfo);
 #else
-  explicit SnapExporter(const std::string outfile, int start, int n_step, int sep)
-    : ExporterBase(start, n_step, sep), file_prefix_(outfile) {}
+  SnapExporter_2(const std::string& filename, int start, int n_step, int sep,
+                 const char* fileinfo, MPI_Comm group_comm);
 #endif
+
+  ~SnapExporter_2();
+
   template <typename TPar>
-  void dump(int i_step, const std::vector<TPar>& p_arr);
+  void dump_pos(int i_step, const std::vector<TPar>& p_arr);
+
+  template <typename TPar>
+  void dump_pos_ori(int i_step, const std::vector<TPar>& p_arr);
+
+  void write_info(const char* info);
+
+  void write_data(const char* buf, size_t buf_size);
 
 private:
   int count_ = 0;
-  std::string file_prefix_;
 #ifdef USE_MPI
   MPI_File fh_{};
   MPI_Comm comm_;
+  MPI_Offset offset_;
+  int my_rank_;
+  int tot_proc_;
 #else
   std::ofstream fout_;
 #endif
-};
+ };
 
 template<typename TPar>
-void SnapExporter::dump(int i_step, const std::vector<TPar>& p_arr) {
-  if (need_export(i_step)) {
-    char filename[100];
-    snprintf(filename, 100, "%s.%04d.bin", file_prefix_.c_str(), count_);
-    count_++;
-    int my_n = p_arr.size();
-#ifdef USE_MPI
-    MPI_File_open(comm_, filename, MPI_MODE_WRONLY | MPI_MODE_CREATE,
-      MPI_INFO_NULL, &fh_);
-    int my_rank;
-    MPI_Comm_rank(comm_, &my_rank);
-    int tot_proc;
-    MPI_Comm_size(comm_, &tot_proc);
-    int my_origin;
-    int* origin_arr = new int[tot_proc];
-    int* n_arr = new int[tot_proc];
-    MPI_Gather(&my_n, 1, MPI_INT, n_arr, 1, MPI_INT, 0, comm_);
-    if (my_rank == 0) {
-      origin_arr[0] = 0;
-      for (int i = 1; i < tot_proc; i++) {
-        origin_arr[i] = origin_arr[i - 1] + n_arr[i - 1];
-      }
+void SnapExporter_2::dump_pos(int i_step, const std::vector<TPar>& p_arr) {
+  if (i_step % sep_ == 0) {
+    size_t n_par = p_arr.size();
+    float* buf = new float[2 * n_par];
+    for (int j = 0; j < n_par; j++) {
+      buf[j * 2 + 0] = p_arr[j].pos.x;
+      buf[j * 2 + 1] = p_arr[j].pos.y;
     }
-    MPI_Scatter(origin_arr, 1, MPI_INT, &my_origin, 1, MPI_INT, 0, comm_);
-    delete[] n_arr;
-    delete[] origin_arr;
+    char frame_info[100];
+    snprintf(frame_info, 100, "t=%d", i_step);
+    write_info(frame_info);
+    write_data((char*)buf, sizeof(buf[0]) * 2 * n_par);
+  }
+}
 
-    MPI_Offset offset = my_origin * 3 * sizeof(float);
-#else
-    fout_.open(filename, std::ios::binary);
-#endif
-    float* buf = new float[3 * my_n];
-    for (int j = 0; j < my_n; j++) {
+template<typename TPar>
+void SnapExporter_2::dump_pos_ori(int i_step, const std::vector<TPar>& p_arr) {
+  if (i_step % sep_ == 0) {
+    size_t n_par = p_arr.size();
+    float* buf = new float[3 * n_par];
+    for (int j = 0; j < n_par; j++) {
       buf[j * 3 + 0] = p_arr[j].pos.x;
       buf[j * 3 + 1] = p_arr[j].pos.y;
       buf[j * 3 + 2] = p_arr[j].get_ori();
     }
-
-#ifdef USE_MPI
-    MPI_File_write_at(fh_, offset, buf, 3 * my_n, MPI_FLOAT, MPI_STATUSES_IGNORE);
-    MPI_File_close(&fh_);
-#else
-    fout_.write(buf, sizeof(float) * my_n * 3);
-    fout_.close()
-#endif
-      delete[] buf;
+    char frame_info[100];
+    snprintf(frame_info, 100, "t=%d", i_step);
+    write_info(frame_info);
+    write_data((char*)buf, sizeof(buf[0]) * 3 * n_par);
   }
 }
-

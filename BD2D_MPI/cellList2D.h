@@ -73,8 +73,8 @@ protected:
                                   { 1,  0 },        // upper
                                   { 1,  1 } };      // upper-right
 
-  RectBlock_2<int> inner_shell_[4];
-  RectBlock_2<int> outer_shell_[4];
+  //RectBlock_2<int> inner_shell_[4];
+  //RectBlock_2<int> outer_shell_[4];
 };
 
 template <class TDomain, class TGrid>
@@ -180,7 +180,10 @@ public:
     auto ic = get_ic(p);
     //if (ic < 0 || ic >= n_cells_) {
     //  std::cout << ic << std::endl;
-    //  std::cout << p.pos.x << "\t" << p.pos.y << std::endl;
+    //  std::cout << "pos = " << p.pos.x << "\t" << p.pos.y << std::endl;
+    //  std::cout << "origin = " << origin_ << std::endl;
+    //  std::cout << "l = " << l_ << std::endl;
+    //  exit(1);
     //}
     p.append_at_front(&head_[ic]);
   }
