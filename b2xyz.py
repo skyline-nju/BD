@@ -17,7 +17,7 @@ def save_as_extxyz(file_in):
     if "theta" in para_dict["data"]:
         comment_line += "Properties=species:S:1:pos:R:2:mass:M:1 "
         frames = decode.read_pos_theta(file_in, return_t=True)
-        for frame in frames:
+        for i_frame, frame in enumerate(frames):
             t, x, y, theta = frame
             theta += np.pi
             mask = theta > np.pi
@@ -28,10 +28,11 @@ def save_as_extxyz(file_in):
                 for i in range(x.size)
             ]
             fout.writelines(lines)
+            print("frame", i_frame, end="\r")
     else:
         comment_line += "Properties=species:S:1:pos:R:2 "
         frames = decode.read_pos(file_in, return_t=True)
-        for frame in frames:
+        for i_frame, frame in enumerate(frames):
             t, x, y = frame
             fout.write("%d\n%s\n" % (N, comment_line + "Time=%d" % t))
             lines = [
@@ -39,9 +40,10 @@ def save_as_extxyz(file_in):
                 for i in range(x.size)
             ]
             fout.writelines(lines)
+            print("frame", "th frame")
     fout.close()
 
 
 if __name__ == "__main__":
-    fname = "D:\\data\\ABP_test\\PBC_MPI\\AmABP_Lx1050_Ly50_p0.55_v-180_C12.bin"
+    fname = "D:\\data\\ABP_test\\PBC_MPI\\AmABP_Lx2100_Ly150_p0.55_v-180_C12.bin"
     save_as_extxyz(fname)

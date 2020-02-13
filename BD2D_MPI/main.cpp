@@ -7,9 +7,9 @@ int main(int argc, char* argv[]) {
 #ifdef _MSC_VER
   double Lx = 300;
   double Ly = 25;
-  double phi = 0.1;
+  double phi = 0.5;
   double Pe = 0;
-  int n_step = 5000;
+  int n_step = 30000;
   double epsilon = 10.;
   double lambda = 3.;
   double r_cut = 1.5;
@@ -25,24 +25,24 @@ int main(int argc, char* argv[]) {
   double phi = atof(argv[3]);
   double Pe = atof(argv[4]);
   int n_step = atoi(argv[5]);
-  double lambda = 3.;
-  double C = atof(argv[6]);
-  double r_cut = atof(argv[7]);
-  Vec_2<int> proc_size(atoi(argv[8]), atoi(argv[9]));
+  Vec_2<int> proc_size(atoi(argv[6]), atoi(argv[7]));
+  //double lambda = 3.;
+  //double C = atof(argv[6]);
+  //double r_cut = atof(argv[7]);
   double epsilon = 10.;
 #endif
   unsigned long long seed = 1;
   int n_par_gl = int(phi * 4. * Lx * Ly / M_PI);
   double sigma = 1.;
-  double h0 = 5e-6;
+  double h0 = 1e-5;
   Vec_2<double> l_gl(Lx, Ly);
 #ifdef USE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
-  //run_ABP(l_gl, phi, Pe, epsilon, h0, n_step, seed, proc_size, MPI_COMM_WORLD);
-  run_ABP_Amphiphilic(l_gl, phi, Pe, epsilon, lambda, C, r_cut, h0, n_step, seed, proc_size, MPI_COMM_WORLD);
+  run_ABP(l_gl, phi, Pe, epsilon, h0, n_step, seed, proc_size, MPI_COMM_WORLD);
+  //run_ABP_Amphiphilic(l_gl, phi, Pe, epsilon, lambda, C, r_cut, h0, n_step, seed, proc_size, MPI_COMM_WORLD);
   MPI_Finalize();
 #else
-  //run_ABP(l_gl, phi, Pe, epsilon, h0, n_step, seed);
-  run_ABP_Amphiphilic(l_gl, phi, Pe, epsilon, lambda, C, r_cut, h0, n_step, seed);
+  run_ABP(l_gl, phi, Pe, epsilon, h0, n_step, seed);
+  //run_ABP_Amphiphilic(l_gl, phi, Pe, epsilon, lambda, C, r_cut, h0, n_step, seed);
 #endif
 }

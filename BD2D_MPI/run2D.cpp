@@ -6,7 +6,8 @@ void run_ABP(Vec_2<double>& gl_l, double phi, double Pe, double eps,
              double h0, int n_step, unsigned long long seed) {
 #else
 void run_ABP(Vec_2<double>& gl_l, double phi, double Pe, double eps,
-             double h0, int n_step, unsigned long long seed, MPI_Comm comm) {
+             double h0, int n_step, unsigned long long seed,
+             const Vec_2<int>& proc_size, MPI_Comm comm) {
 #endif
   typedef BiNode<BP_u_2> node_t;
   std::vector<node_t> p_arr;
@@ -18,15 +19,11 @@ void run_ABP(Vec_2<double>& gl_l, double phi, double Pe, double eps,
   ini_rand(p_arr, n_par_gl, gl_l, sigma, myran);
 #else
   int tot_proc, my_rank;
-  MPI_Comm_size(MPI_COMM_WORLD, &tot_proc);
-  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-  Ranq2 myran(seed + my_rank);
-  Vec_2<int> proc_size(tot_proc, 1);
+  MPI_Comm_size(comm, &tot_proc);
+  MPI_Comm_rank(comm, &my_rank);
+  Ranq2 myran(1);
   ini_rand(p_arr, n_par_gl, gl_l, sigma, myran, proc_size, comm);
-  std::cout << "proc " << my_rank << " is intialized" << std::endl;
-  MPI_Barrier(comm);
 #endif
-
   EM_ABD_iso integrator(h0, Pe);
   WCAForce_2 f_wca(1., sigma);
   double r_cut = f_wca.get_r_cut();
@@ -42,12 +39,9 @@ void run_ABP(Vec_2<double>& gl_l, double phi, double Pe, double eps,
   Grid_2 grid(gl_l, r_cut, proc_size, comm);
   PeriodicDomain_2 pdm(gl_l, grid, proc_size, comm);
   Communicator_2 communicator(pdm, grid, 1, 20);
-  MPI_Barrier(comm);
-  std::cout << "create communicator for proc=" << my_rank << std::endl;
 #endif
   CellListNode_2<node_t> cl(pdm, grid);
-  MPI_Barrier(comm);
-  std::cout << "create celllist for proc=" << my_rank << std::endl;
+
   // cal pair force
   auto f1 = [&f_wca](node_t* p1, node_t* p2) {
     Vec_2<double> r12 = p2->pos - p1->pos;
@@ -78,8 +72,9 @@ void run_ABP(Vec_2<double>& gl_l, double phi, double Pe, double eps,
     cl.for_each_pair_slow(f1, f2);
   };
 
-  auto integrate = [&integrator, &myran, &pdm](node_t& p) {
-    integrator.update(p, pdm, myran);
+  Ranq2 myran2(1);
+  auto integrate = [&integrator, &myran2, &pdm](node_t& p) {
+    integrator.update(p, pdm, myran2);
   };
 
   char prefix[100];
@@ -91,20 +86,17 @@ void run_ABP(Vec_2<double>& gl_l, double phi, double Pe, double eps,
   XyzExporter_2 xy_outer(prefix, 0, n_step, 100, gl_l);
   SnapExporter_2 snap_outer(prefix, 0, n_step, 100, file_info);
 #else
-  XyzExporter_2 xy_outer(prefix, 0, n_step, 100, gl_l, comm);
-  SnapExporter_2 snap_outer(prefix, 0, n_step, 100, file_info, comm);
+  LogExporter log_outer(prefix, 0, n_step, 5000, n_par_gl, MPI_COMM_WORLD);
+  XyzExporter_2 xy_outer(prefix, 0, n_step, 1000, gl_l, comm);
+  //SnapExporter_2 snap_outer(prefix, 0, n_step, 100, file_info, comm);
 #endif
-  auto exporter = [&xy_outer, &snap_outer](int i_step, const std::vector<node_t>& par_arr) {
+  auto exporter = [&xy_outer, &log_outer](int i_step, const std::vector<node_t>& par_arr) {
     xy_outer.dump_pos(i_step, par_arr);
-    snap_outer.dump_pos(i_step, par_arr);
+    log_outer.record(i_step);
+    //snap_outer.dump_pos(i_step, par_arr);
   };
 
   exporter(0, p_arr);
-  MPI_Barrier(comm);
-  std::cout << "start to run for proc = " << my_rank << std::endl;
-  if (my_rank == 0) {
-    std::cout << std::endl;
-  }
   MPI_Barrier(comm);
 
   for (int i = 1; i <= n_step; i++) {
@@ -125,7 +117,7 @@ void run_ABP_Amphiphilic(Vec_2<double>& gl_l, double phi, double Pe,
 void run_ABP_Amphiphilic(Vec_2<double> & gl_l, double phi, double Pe,
                          double eps, double lambda, double C, double r_cut,
                          double h0, int n_step, unsigned long long seed,
-                         const Vec_2<int>& proc_size, MPI_Comm comm) {
+                         const Vec_2<int>& proc_size, MPI_Comm group_comm) {
 #endif
   typedef BiNode<BP_u_tau_2> node_t;
   std::vector<node_t> p_arr;
@@ -137,14 +129,14 @@ void run_ABP_Amphiphilic(Vec_2<double> & gl_l, double phi, double Pe,
   ini_rand(p_arr, n_par_gl, gl_l, sigma, myran);
 #else
   int tot_proc, my_rank;
-  MPI_Comm_size(MPI_COMM_WORLD, &tot_proc);
-  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+  MPI_Comm_size(group_comm, &tot_proc);
+  MPI_Comm_rank(group_comm, &my_rank);
   Ranq2 myran(seed + my_rank);
   if (proc_size.x * proc_size.y != tot_proc) {
     std::cout << "Wrong proc size" << std::endl;
     exit(2);
   }
-  ini_rand(p_arr, n_par_gl, gl_l, sigma, myran, proc_size, comm);
+  ini_rand(p_arr, n_par_gl, gl_l, sigma, myran, proc_size, group_comm);
 #endif
 
   EM_ABD_aniso integrator(h0, Pe);
@@ -154,8 +146,8 @@ void run_ABP_Amphiphilic(Vec_2<double> & gl_l, double phi, double Pe,
   Grid_2 grid(gl_l, r_cut);
   PeriodicDomain_2 pdm(gl_l);
 #else
-  Grid_2 grid(gl_l, r_cut, proc_size, comm);
-  PeriodicDomain_2 pdm(gl_l, grid, proc_size, comm);
+  Grid_2 grid(gl_l, r_cut, proc_size, group_comm);
+  PeriodicDomain_2 pdm(gl_l, grid, proc_size, group_comm);
   Communicator_2 communicator(pdm, grid, 1, 10);
 #endif
   CellListNode_2<node_t> cl(pdm, grid);
@@ -197,7 +189,7 @@ void run_ABP_Amphiphilic(Vec_2<double> & gl_l, double phi, double Pe,
     p1->tau += tau1;
     p2->tau += tau2;
   };
-  auto pair_force = [f1, f2, &cl]() {
+  auto pair_force = [&f1, &f2, &cl]() {
     cl.for_each_pair_slow(f1, f2);
   };
 
@@ -215,9 +207,9 @@ void run_ABP_Amphiphilic(Vec_2<double> & gl_l, double phi, double Pe,
   //XyzExporter_2 xy_outer(prefix, 0, n_step, 100, gl_l);
   SnapExporter_2 snap_outer(prefix, 0, n_step, 10000, file_info);
 #else
-  LogExporter log_outer(prefix, 0, n_step, 100000, n_par_gl, comm);
-  //XyzExporter_2 xy_outer(prefix, 0, n_step, 100, gl_l, comm);
-  SnapExporter_2 snap_outer(prefix, 0, n_step, 10000, file_info, comm);
+  LogExporter log_outer(prefix, 0, n_step, 100000, n_par_gl, group_comm);
+  //XyzExporter_2 xy_outer(prefix, 0, n_step, 100, gl_l, group_comm);
+  SnapExporter_2 snap_outer(prefix, 0, n_step, 10000, file_info, group_comm);
 #endif
 
   auto exporter = [&log_outer, &snap_outer](int i_step, const std::vector<node_t>& par_arr) {

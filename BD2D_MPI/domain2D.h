@@ -6,7 +6,7 @@
 #endif
 
 #ifdef USE_MPI
-Vec_2<int> get_proc_rank(const Vec_2<int>& proc_size, MPI_Comm group_comm);
+void get_proc_rank_vec(const Vec_2<int>& proc_size, Vec_2<int>& proc_rank, MPI_Comm group_comm);
 #endif
 
 /**
