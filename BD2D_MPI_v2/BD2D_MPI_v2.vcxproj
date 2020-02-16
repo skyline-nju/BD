@@ -142,17 +142,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="boundary2D.h" />
+    <ClInclude Include="cellList2D.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="domain2D.h" />
-    <ClInclude Include="exporter2D.h" />
     <ClInclude Include="force2D.h" />
     <ClInclude Include="integrate2D.h" />
+    <ClInclude Include="iodata2D.h" />
     <ClInclude Include="particle2D.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ABP.cpp" />
-    <ClCompile Include="dm2D.cpp" />
-    <ClCompile Include="exporter2D.cpp" />
+    <ClCompile Include="cellList2D.cpp" />
+    <ClCompile Include="domain2D.cpp" />
+    <ClCompile Include="iodata2D.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

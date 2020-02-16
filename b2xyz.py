@@ -45,5 +45,11 @@ def save_as_extxyz(file_in):
 
 
 if __name__ == "__main__":
-    fname = "D:\\data\\ABP_test\\PBC_MPI\\AmABP_Lx2100_Ly150_p0.55_v-180_C12.bin"
-    save_as_extxyz(fname)
+    # fname = "D:\\data\\ABP_test\\PBC_MPI\\AmABP_Lx1000_Ly25_p0.55_v-180_C12.bin"
+
+    import glob
+    path = 'D:\\data\\ABP_test\\Feb16'
+    # path = 'D:\\code\\BD\\BD2D_MPI_v2'
+    files = glob.glob("%s\\*.bin" % path)
+    for fname in files:
+        save_as_extxyz(fname)

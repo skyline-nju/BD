@@ -1,5 +1,6 @@
-#include "exporter2D.h"
+#include "iodata2D.h"
 #include <string.h>
+#include <sstream>
 
 std::string add_suffix(const std::string& str, const std::string& suffix) {
   auto idx = str.find(suffix);
@@ -152,7 +153,6 @@ void SnapExporter_2::write_info(const char* info) {
 #endif
 }
 
-
 void SnapExporter_2::write_data(const char* buf, size_t buf_size) {
 #ifndef USE_MPI
   fout_.write((char*)buf_size, sizeof(buf_size));
@@ -190,5 +190,45 @@ XyzExporter_2::XyzExporter_2(const std::string &outfile, int start, int n_step, 
   char filename[100];
   snprintf(filename, 100, "%s_n%d.extxyz", outfile.c_str(), my_rank);
   fout_.open(filename);
+}
+
+int load_last_frame(const std::string& filein, float* buf) {
+  std::ifstream fin(add_suffix(filein, ".bin"), std::ios::binary);
+  int info_size;
+  fin.seekg(0, std::ios::end);
+  size_t file_size = fin.tellg();
+  fin.seekg(0, std::ios::beg);
+  
+  fin.read((char*)&info_size, 4);
+  char info[200];
+  //fin.read(info, info_size);
+  //std::cout << info << std::endl;
+  fin.seekg(info_size, std::ios::cur);
+  //memset(info, '\0', sizeof(info));
+  char* info_buf = nullptr;
+
+  // get t and size of the last frame
+  int t = 0;
+  size_t frame_size = 0;
+  while (fin.tellg() < file_size) {
+    fin.read((char*)&info_size, 4);
+    fin.read(info, info_size);
+#ifdef _MSC_VER
+    char* ptr = strtok_s(info, "=", &info_buf);
+    ptr = strtok_s(NULL, "=", &info_buf);
+#else
+    char* ptr = strtok_r(info, "=", &info_buf);
+    ptr = strtok_r(NULL, "=", &info_buf);
+#endif
+    t = atoi(ptr);
+    memset(info, '\0', strlen(info));
+    fin.read((char*)&frame_size, sizeof(frame_size));
+    fin.seekg(frame_size, std::ios::cur);
+  }
+
+  fin.seekg(frame_size, std::ios::end);
+  fin.read((char*)buf, frame_size);
+  fin.close();
+  return t;
 }
 #endif

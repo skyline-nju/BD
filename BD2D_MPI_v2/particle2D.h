@@ -67,6 +67,9 @@ public:
   template <typename TInt>
   void copy_from(const double* source, TInt& idx) { copy_pos_from(source, idx); }
 
+  template <typename TInt>
+  void load_from_file(const float* buf, TInt& idx);
+
   Vec_2<double> pos;
   Vec_2<double> f;
 };
@@ -82,6 +85,13 @@ template <typename TInt>
 void BP_2::copy_pos_from(const double* source, TInt& idx) {
   pos.x = source[idx];
   pos.y = source[idx + 1];
+  idx += 2;
+}
+
+template <typename TInt>
+void BP_2::load_from_file(const float* buf, TInt& idx) {
+  pos.x = buf[idx];
+  pos.y = buf[idx + 1];
   idx += 2;
 }
 
@@ -103,6 +113,9 @@ public:
 
   template <typename TInt>
   void copy_from(const double* source, TInt& idx);
+
+  template <typename TInt>
+  void load_from_file(const float* buf, TInt& idx);
 
   const Vec_2<double>& update_ori(double d_theta) { 
     u.rotate(d_theta); return u; }
@@ -131,6 +144,16 @@ void BP_u_2::copy_from(const double* source, TInt& idx) {
   u.x = source[idx + 2];
   u.y = source[idx + 3];
   idx += 4;
+}
+
+template <typename TInt>
+void BP_u_2::load_from_file(const float* buf, TInt& idx) {
+  pos.x = buf[idx];
+  pos.y = buf[idx + 1];
+  double theta = buf[idx + 2];
+  u.x = std::cos(theta);
+  u.y = std::sin(theta);
+  idx += 3;
 }
 
 class BP_u_tau_2 : public BP_u_2 {
@@ -169,6 +192,9 @@ public:
   template <typename TInt>
   void copy_from(const double* source, TInt& idx);
 
+  template <typename TInt>
+  void load_from_file(const float* buf, TInt& idx);
+
   double get_ori() const { return theta; }
 
   double theta;
@@ -187,6 +213,14 @@ void BP_theta_2::copy_from(const double* source, TInt& idx) {
   pos.x = source[idx];
   pos.y = source[idx + 1];
   theta = source[idx + 2];
+  idx += 3;
+}
+
+template <typename TInt>
+void BP_theta_2::load_from_file(const float* buf, TInt& idx) {
+  pos.x = buf[idx];
+  pos.y = buf[idx + 1];
+  theta = buf[idx + 2];
   idx += 3;
 }
 

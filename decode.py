@@ -111,6 +111,10 @@ def read_pos_theta(fin, show_frame_info=False, return_t=False):
                 yield t, x, y, theta
 
 
+# def get_last_frame(fin, save=True):
+#     file_out = fin.rstrip(".bin")
+
+
 if __name__ == "__main__":
     # fname = "AmABP_Lx40_Ly20_p0.7_v0_C12.bin"
     fname = "D:\\data\\ABP_test\\PBC_MPI\\open_mpi\\AmABP_Lx150_Ly75_p0.55_v-180_C12.bin"

@@ -220,3 +220,5 @@ void SnapExporter_2::dump_pos_ori(int i_step, const std::vector<TPar>& p_arr) {
     write_data((char*)buf, sizeof(buf[0]) * 3 * n_par);
   }
 }
+
+int load_last_frame(const std::string& filein, float* buf);

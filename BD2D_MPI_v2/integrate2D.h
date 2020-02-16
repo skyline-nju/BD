@@ -34,7 +34,7 @@ public:
   void update(TPar& p, const BdyCondi& bc, TRan& myran) const;
 
   void set_Pe(double Pe) { Pe_ = Pe; }
-  void set_Dr(double Dr) { Dr_ = Dr; }
+  void set_Dr(double Dr) { Dr_ = std::sqrt(24. * h_ * Dr); }
 protected:
   double Dr_; // sqrt(72 * h) by default
   double Pe_;
