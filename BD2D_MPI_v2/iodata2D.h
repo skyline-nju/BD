@@ -79,12 +79,11 @@ private:
 class XyzExporter_2 : public ExporterBase {
 public:
 #ifndef USE_MPI
-  XyzExporter_2(const std::string &outfile, int start, int n_step, int sep,
-                const Vec_2<double>& gl_l)
-    : ExporterBase(start, n_step, sep), fout_(add_suffix(outfile, ".extxyz")), gl_l_(gl_l) {}
+  XyzExporter_2(const std::string& outfile, int start, int n_step, int sep,
+    const Vec_2<double>& gl_l);
 #else
-  XyzExporter_2(const std::string &outfile, int start, int n_step, int sep,
-                const Vec_2<double>& gl_l, MPI_Comm group_comm);
+  XyzExporter_2(const std::string& outfile, int start, int n_step, int sep,
+    const Vec_2<double>& gl_l, MPI_Comm group_comm);
 #endif
   template <typename TPar>
   void dump_pos(int i_step, const std::vector<TPar>& par_arr);
@@ -108,7 +107,7 @@ void XyzExporter_2::dump_pos(int i_step, const std::vector<TPar>& par_arr) {
     fout_ << n_par << "\n";
     // comment line
     fout_ << "Lattice=\"" << gl_l_.x << " 0 0 0 " << gl_l_.y << " 0 0 0 1\" "
-      << "Properties=species:S:1:pos:R:2 Time=" << i_step;
+      << "Properties=species:S:1:pos:R:2 Time=" << i_step + start_;
     for (int j = 0; j < n_par; j++) {
       fout_ << "\n" << "N\t"
         << par_arr[j].pos.x << "\t" << par_arr[j].pos.y;
@@ -120,11 +119,11 @@ void XyzExporter_2::dump_pos(int i_step, const std::vector<TPar>& par_arr) {
 template<typename TPar>
 void XyzExporter_2::dump_doub_pos(int i_step, const std::vector<TPar>& par_arr) {
   if (i_step % sep_ == 0) {
-    int n_par = par_arr.size();
+    int n_par = static_cast<int>(par_arr.size());
     fout_ << n_par * 2 << "\n";
     // comment line
     fout_ << "Lattice=\"" << gl_l_.x << " 0 0 0 " << gl_l_.y << " 0 0 0 1\" "
-      << "Properties=species:S:1:pos:R:2 Time=" << i_step;
+      << "Properties=species:S:1:pos:R:2 Time=" << i_step + start_;
     for (int j = 0; j < n_par; j++) {
       fout_ << "\n" << "N\t"
         << par_arr[j].pos.x << "\t" << par_arr[j].pos.y;
@@ -144,7 +143,7 @@ void XyzExporter_2::dump_pos_ori(int i_step, const std::vector<TPar>& par_arr) {
     fout_ << n_par << "\n";
     // comment line
     fout_ << "Lattice=\"" << gl_l_.x << " 0 0 0 " << gl_l_.y << " 0 0 0 1\" "
-      << "Properties=species:S:1:pos:R:2:mass:M:1 Time=" << i_step;
+      << "Properties=species:S:1:pos:R:2:mass:M:1 Time=" << i_step + start_;
     for (int j = 0; j < n_par; j++) {
       fout_ << "\n" << "N\t"
         << par_arr[j].pos.x << "\t" << par_arr[j].pos.y << "\t" << par_arr[j].get_ori();
@@ -194,11 +193,11 @@ void SnapExporter_2::dump_pos(int i_step, const std::vector<TPar>& p_arr) {
     size_t n_par = p_arr.size();
     float* buf = new float[2 * n_par];
     for (int j = 0; j < n_par; j++) {
-      buf[j * 2 + 0] = p_arr[j].pos.x;
-      buf[j * 2 + 1] = p_arr[j].pos.y;
+      buf[j * 2 + 0] = float(p_arr[j].pos.x);
+      buf[j * 2 + 1] = float(p_arr[j].pos.y);
     }
     char frame_info[100];
-    snprintf(frame_info, 100, "t=%d", i_step);
+    snprintf(frame_info, 100, "t=%d", i_step + start_);
     write_info(frame_info);
     write_data((char*)buf, sizeof(buf[0]) * 2 * n_par);
   }
@@ -206,19 +205,19 @@ void SnapExporter_2::dump_pos(int i_step, const std::vector<TPar>& p_arr) {
 
 template<typename TPar>
 void SnapExporter_2::dump_pos_ori(int i_step, const std::vector<TPar>& p_arr) {
-  if (i_step % sep_ == 0) {
+  if (i_step  % sep_ == 0) {
     size_t n_par = p_arr.size();
     float* buf = new float[3 * n_par];
     for (int j = 0; j < n_par; j++) {
-      buf[j * 3 + 0] = p_arr[j].pos.x;
-      buf[j * 3 + 1] = p_arr[j].pos.y;
-      buf[j * 3 + 2] = p_arr[j].get_ori();
+      buf[j * 3 + 0] = float(p_arr[j].pos.x);
+      buf[j * 3 + 1] = float(p_arr[j].pos.y);
+      buf[j * 3 + 2] = float(p_arr[j].get_ori());
     }
     char frame_info[100];
-    snprintf(frame_info, 100, "t=%d", i_step);
+    snprintf(frame_info, 100, "t=%d", i_step + start_);
     write_info(frame_info);
     write_data((char*)buf, sizeof(buf[0]) * 3 * n_par);
   }
 }
 
-int load_last_frame(const std::string& filein, float* buf);
+void load_last_frame(const std::string& filein, float* buf, int& t_last);

@@ -7,6 +7,7 @@
 #include "force2D.h"
 #include "boundary2D.h"
 #include "integrate2D.h"
+#include "particle2D.h"
 #include "mpi.h"
 
 class Domain_2 {
@@ -37,14 +38,6 @@ public:
   template <typename TPar, typename TInteg, typename BdyCondi, typename TRan>
   void integrate(std::vector<BiNode<TPar>>& p_arr, CellList_2<TPar>& cl,
                  const TInteg& integrator, const BdyCondi& bc, TRan& myran);
-
-  template <typename TPar, typename BdyCondi>
-  void ini_rand(std::vector<BiNode<TPar>>& p_arr, int n_par_gl,
-                const BdyCondi& bc, double sigma = 1.);
-
-  template <typename TPar>
-  void ini_from_file(const std::string& file_in, std::vector<BiNode<TPar>>& p_arr,
-                     int n_par_gl, double sigma=1.);
 
 protected:
   Vec_2<double> gl_l_;
@@ -104,7 +97,7 @@ void Domain_2::cal_force(std::vector<BiNode<TPar>>& p_arr, CellList_2<TPar>& cl,
     cl.unpack_pos(buf, buf_size, p_arr);
   };
 
-  int par_num0 = p_arr.size();
+  int par_num0 = static_cast<int>(p_arr.size());
   if (flag_comm_.x) {
     communicate(0, pack, unpack, []() {});
   }
@@ -163,127 +156,11 @@ void Domain_2::integrate(std::vector<BiNode<TPar>>& p_arr, CellList_2<TPar>& cl,
   cl.compact(p_arr, vacancy);
 
   for (auto it = p_arr.begin(); it != p_arr.end(); ++it) {
-    if (box_.out_of((*it).pos)) {
+    if (box_.out((*it).pos)) {
       std::cout << (*it).pos << " is out of box " << box_ << "; ix=" << cl.get_idx_x(*it)
         << "; iy=" << cl.get_idx_y(*it) << "; with lc=" << cl.get_lc() << std::endl;
       std::cout << "outer_edge: " << cl.get_outer_edge(0);
       exit(1);
     }
   }
-}
-
-template<typename TPar, typename BdyCondi>
-void Domain_2::ini_rand(std::vector<BiNode<TPar>>& p_arr, int n_par_gl,
-                    const BdyCondi& bc, double sigma){
-  int n_max = int(box_.l.x * box_.l.y / (sigma * sigma) * 5);
-  p_arr.reserve(n_max);
-  int n_par;
-  if (my_rank_ < tot_proc_ - 1) {
-    n_par = n_par_gl / tot_proc_;
-  } else {
-    n_par = n_par_gl - n_par_gl / tot_proc_ * (tot_proc_ - 1);
-  }
-  if (my_rank_ == 0) {
-    std::cout << "nPar = " << n_par << "for rank =" << my_rank_ << std::endl;
-    //n_par -= 1;
-  }
-  MPI_Barrier(comm_);
-  if (my_rank_ == 1) {
-    std::cout << "nPar = " << n_par << "for rank =" << my_rank_ << std::endl;
-    //n_par += 1;
-  }
-  MPI_Barrier(comm_);
-  
-  Vec_2<double> origin = box_.o;
-  Vec_2<double> l = box_.l;
-  if (proc_size_vec_.x > 1) {
-    l.x -= sigma * 0.5;
-    origin.x += sigma * 0.5;
-  }
-  if (proc_size_vec_.y > 1) {
-    l.y -= sigma * 0.5;
-    origin.y += sigma * 0.5;
-  }
-  Ranq2 myran(1 + my_rank_);
-  if (n_par_gl < box_.l.x * box_.l.y / (sigma * sigma) / 2) {
-    create_rand_par_2(p_arr, n_par, origin, l, bc, myran, sigma);
-  } else {
-    double r_cut = sigma;
-    set_buf(r_cut, 10);
-    EM_BD_iso integrator(1e-4);
-    SpringForce_2 pair_force(500, sigma);
-    CellList_2<TPar> cl(box_, r_cut, gl_l_, proc_size_vec_);
-    double sigma_new = 0.5 * sigma;
-    create_rand_par_2(p_arr, n_par, origin, l, bc, myran, sigma_new);
-
-    cl.create(p_arr);
-    do {
-      //std::cout << "sigma=" << sigma_new << std::endl;
-      sigma_new += 0.01;
-      pair_force.set_sigma(sigma_new);
-      MPI_Barrier(comm_);
-      for (int i = 0; i < 500; i++) {
-        //std::cout << "i = " << i << std::endl;
-        cal_force(p_arr, cl, pair_force, bc);
-        integrate(p_arr, cl, integrator, bc, myran);
-      }
-    } while (sigma_new < sigma);
-  }
-  if (my_rank_ == 0) {
-    std::cout << "initialized randomly!\n";
-    std::cout << "************************************\n" << std::endl;
-  }
-  MPI_Barrier(comm_);
-}
-
-
-template<typename TPar>
-void Domain_2::ini_from_file(const std::string& file_in, std::vector<BiNode<TPar>>& p_arr, int n_par_gl, double sigma) {
-  int n_max = int(box_.l.x * box_.l.y / (sigma * sigma) * 5);
-  p_arr.reserve(n_max);
-
-  std::ifstream fin(file_in, std::ios::binary);
-  fin.seekg(0, std::ios::end);
-  int file_size = fin.tellg();
-  int buf_size = file_size / sizeof(float);
-  if (file_size % sizeof(float) != 0 || buf_size % n_par_gl != 0) {
-    std::cout << "Error when load " << file_in << ", wrong file size" << std::endl;
-    exit(5);
-  } 
-  float* buf = new float[buf_size];
-  fin.read((char*)buf, buf_size * sizeof(float));
-  fin.close();
-  int buf_pos = 0;
-  while (buf_pos < buf_size) {
-    TPar p;
-    p.load_from_file(buf, buf_pos);
-    if (p.pos.x <= 0) {
-      p.pos.x += gl_l_.x;
-    } else if (p.pos.x > gl_l_.x) {
-      p.pos.x -= gl_l_.x;
-    }
-    if (p.pos.y <= 0) {
-      p.pos.y += gl_l_.y;
-    } else if (p.pos.y > gl_l_.y) {
-      p.pos.y -= gl_l_.y;
-    }
-    if (box_.with_in(p.pos)) {
-      p_arr.push_back(p);
-    }
-  }
-
-  int my_n = p_arr.size();
-  int tot_n;
-  MPI_Reduce(&my_n, &tot_n, 1, MPI_INT, MPI_SUM, 0, comm_);
-  if (my_rank_ == 0) {
-    if (tot_n == n_par_gl) {
-      std::cout << "Successed to load " << tot_n << " particles from " << file_in << std::endl;
-    } else {
-      std::cout << tot_n << "particles are loaded, while " << n_par_gl << " are required" << std::endl;
-      exit(5);
-    }
-  }
-
-
-
 }

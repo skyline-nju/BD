@@ -3,8 +3,10 @@
 
 class PeriodicBdyCondi_2 {
 public:
-  PeriodicBdyCondi_2(const Vec_2<double>& gl_l, const Vec_2<int>& proc_size)
-    : l_(gl_l), half_l_(gl_l * 0.5), flag_PBC_(proc_size.x == 1, proc_size.y == 1) {}
+  PeriodicBdyCondi_2(const Vec_2<double>& gl_l,
+                     const Vec_2<int>& proc_size = Vec_2<int>(1, 1))
+    : l_(gl_l), half_l_(gl_l * 0.5),
+      flag_PBC_(proc_size.x == 1, proc_size.y == 1) {}
 
   void tangle(Vec_2<double>& pos) const;
 

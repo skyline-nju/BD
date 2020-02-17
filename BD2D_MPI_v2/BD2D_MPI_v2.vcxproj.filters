@@ -39,11 +39,11 @@
     <ClInclude Include="cellList2D.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ABP2D.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ABP.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="domain2D.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -51,6 +51,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="cellList2D.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ABP2D.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

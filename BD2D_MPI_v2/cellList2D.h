@@ -18,12 +18,12 @@ public:
   Box_2(const Vec_2<T>& ll, const Vec_2<T>& oo) : l(ll), o(oo) {}
   Vec_2<T> get_end() const { return l + o; }
 
-  bool with_in(const Vec_2<T>& p) const {
+  bool within(const Vec_2<T>& p) const {
     Vec_2<T> r = l + o;
-    return p.x >= o.x && p.x < r.x && p.y >= o.y && p.y <= r.y;
+    return p.x >= o.x && p.x < r.x && p.y >= o.y && p.y < r.y;
   }
 
-  bool out_of(const Vec_2<T>& p) const {
+  bool out(const Vec_2<T>& p) const {
     Vec_2<T> r = l + o;
     return p.x < o.x || p.x >= r.x || p.y < o.y || p.y >= r.y;
   }
@@ -155,7 +155,7 @@ void CellList_2<TPar>::recreate(std::vector<node_t>& p_arr) {
 
 template<typename TPar>
 void CellList_2<TPar>::add_node(node_t& p) {
-  //if (!box_.with_in(p.pos)) {
+  //if (!box_.within(p.pos)) {
   //  std::cout << p.pos << std::endl;
   //  exit(5);
   //}
@@ -310,7 +310,7 @@ int CellList_2<TPar>::pack_leaving_par(double* buf, const Block_2& block,
       node_t* cur_node = head_node;
       do {
         cur_node->copy_to(buf, buf_pos);
-        vacancy.push_back(cur_node - p0);
+        vacancy.push_back(static_cast<int>(cur_node - p0));
         cur_node = cur_node->next;
       } while (cur_node);
       head_[i] = nullptr;
@@ -360,7 +360,7 @@ void CellList_2<TPar>::unpack_arrived_par(const double* buf, int buf_size,
     p->copy_from(buf, buf_pos);
     p->pos += offset;
     //! when communicate along both direction, the following case is possible to happen
-    //if (real_box_.out_of(p->pos)) {
+    //if (real_box_.out(p->pos)) {
     //  std::cout << "after unpack, pos=" << p->pos << " is out of " << real_box_ << std::endl;
     //  exit(10);
     //}

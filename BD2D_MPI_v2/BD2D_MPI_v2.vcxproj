@@ -141,6 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ABP2D.h" />
     <ClInclude Include="boundary2D.h" />
     <ClInclude Include="cellList2D.h" />
     <ClInclude Include="config.h" />
@@ -151,7 +152,7 @@
     <ClInclude Include="particle2D.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ABP.cpp" />
+    <ClCompile Include="ABP2D.cpp" />
     <ClCompile Include="cellList2D.cpp" />
     <ClCompile Include="domain2D.cpp" />
     <ClCompile Include="iodata2D.cpp" />

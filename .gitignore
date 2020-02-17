@@ -12,6 +12,7 @@
 *.bin
 *.extxyz
 *.out
+*.o
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
