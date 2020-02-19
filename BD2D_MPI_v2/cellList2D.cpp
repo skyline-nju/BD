@@ -58,6 +58,17 @@ void Mesh_2::show_info()const {
   }
 }
 
+Vec_2<int> Mesh_2::get_real_n() const {
+  Vec_2<int> m = n_;
+  if (flag_pad_.x) {
+    m.x -= 2;
+  } 
+  if (flag_pad_.y) {
+    m.y -= 2;
+  }
+  return m;
+}
+
 void Mesh_2::cal_pos_offset(Vec_2<double>& offset, const Vec_2<double>& pos) const {
   Vec_2<double> dR = pos - box_.o;
   offset.x = offset.y = 0.;

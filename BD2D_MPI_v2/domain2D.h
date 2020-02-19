@@ -39,6 +39,9 @@ public:
   void integrate(std::vector<BiNode<TPar>>& p_arr, CellList_2<TPar>& cl,
                  const TInteg& integrator, const BdyCondi& bc, TRan& myran);
 
+  template <typename TPar>
+  void shell_sorting(std::vector<BiNode<TPar>>& p_arr, CellList_2<TPar>& cl, int interval_steps) const;
+
 protected:
   Vec_2<double> gl_l_;
   Box_2<double> box_;
@@ -152,15 +155,74 @@ void Domain_2::integrate(std::vector<BiNode<TPar>>& p_arr, CellList_2<TPar>& cl,
     communicate(1, pack, unpack, sort_ascending);
   }
 
-  sort_ascending();
+  //sort_ascending();
   cl.compact(p_arr, vacancy);
 
-  for (auto it = p_arr.begin(); it != p_arr.end(); ++it) {
-    if (box_.out((*it).pos)) {
-      std::cout << (*it).pos << " is out of box " << box_ << "; ix=" << cl.get_idx_x(*it)
-        << "; iy=" << cl.get_idx_y(*it) << "; with lc=" << cl.get_lc() << std::endl;
-      std::cout << "outer_edge: " << cl.get_outer_edge(0);
-      exit(1);
+  //for (auto it = p_arr.begin(); it != p_arr.end(); ++it) {
+  //  if (box_.out((*it).pos)) {
+  //    std::cout << (*it).pos << " is out of box " << box_ << "; ix=" << cl.get_idx_x(*it)
+  //      << "; iy=" << cl.get_idx_y(*it) << "; with lc=" << cl.get_lc() << std::endl;
+  //    std::cout << "outer_edge: " << cl.get_outer_edge(0);
+  //    exit(1);
+  //  }
+  //}
+}
+
+template<typename TPar>
+void Domain_2::shell_sorting(std::vector<BiNode<TPar>>& p_arr, CellList_2<TPar>& cl,
+                             int interval_steps) const{
+  static int step_count = 0;
+  if (step_count == interval_steps) {
+    step_count = 0;
+    
+    int n_layer = cl.get_real_n().x;
+    double inverse_l = n_layer / box_.l.x;
+    int* np_layer = new int[n_layer] {};
+    int n_par = p_arr.size();
+    int* i_layer_par = new int[n_par] {};
+
+    int copy_size = 0;
+    if (typeid(TPar) == typeid(BP_2)) {
+      copy_size = 2;
+    } else if (typeid(TPar) == typeid(BP_theta_2) ||
+      typeid(TPar) == typeid(BP_theta_tau_2)) {
+      copy_size = 3;
+    } else if (typeid(TPar) == typeid(BP_u_2) ||
+      typeid(TPar) == typeid(BP_u_tau_2)) {
+      copy_size = 4;
+    } else {
+      std::cout << "Wrong particle type when reading from file\n";
+      exit(2);
     }
+    double* buf = new double[n_par * copy_size];
+    int buf_pos = 0;
+    for (int i = 0; i < n_par; i++) {
+      int i_layer = int((p_arr[i].pos.x - box_.o.x) * inverse_l);
+      np_layer[i_layer] += 1;
+      i_layer_par[i] = i_layer;
+      p_arr[i].copy_to(buf, buf_pos);
+    }
+    
+    int* first_par_layer = new int[n_layer];
+    first_par_layer[0] = 0;
+    for (int i = 1; i < n_layer; i++) {
+      first_par_layer[i] = first_par_layer[i - 1] + np_layer[i - 1];
+    }
+
+    buf_pos = 0;
+    for (int i = 0; i < n_par; i++) {
+      int k = i_layer_par[i];
+      int ip_new = first_par_layer[k] + np_layer[k] - 1;
+      p_arr[ip_new].copy_from(buf, buf_pos);
+      np_layer[k] -= 1;
+    }
+    delete[] i_layer_par;
+    delete[] np_layer;
+    delete[] buf;
+    delete[] first_par_layer;
+
+    cl.recreate(p_arr);
+  } else {
+    step_count++;
   }
 }

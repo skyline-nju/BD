@@ -81,6 +81,8 @@ public:
   const Block_2& get_inner_edge(int idx) const { return inner_edge_[idx]; }
   const Block_2& get_outer_edge(int idx) const { return outer_edge_[idx]; }
 
+  const Vec_2<int>& get_n() const { return n_; }
+  Vec_2<int> get_real_n() const;
 protected:
   int n_tot_;
   Vec_2<int> n_;

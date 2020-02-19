@@ -1,4 +1,5 @@
 #pragma once
+#include <typeinfo>
 #include "config.h"
 #include "vect.h"
 #define M_PI 3.14159265358979323846
@@ -237,4 +238,3 @@ public:
 
   double tau;
 };
-

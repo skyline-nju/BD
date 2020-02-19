@@ -8,7 +8,7 @@ int main(int argc, char* argv[]) {
   double Ly = 25;
   double phi = 0.5;
   double Pe = 0;
-  int n_step = 30000;
+  int n_step = 100000;
   double epsilon = 10.;
   int tot_proc;
   MPI_Comm_size(MPI_COMM_WORLD, &tot_proc);
@@ -57,6 +57,7 @@ int main(int argc, char* argv[]) {
     for (int i = 1; i <= n_step; i++) {
       dm.cal_force(p_arr, cl, f_wca, bc);
       dm.integrate(p_arr, cl, integrator, bc, myran);
+      dm.shell_sorting(p_arr, cl, 10000);
       exporter(i, p_arr);
     }
   }
@@ -71,7 +72,7 @@ int main(int argc, char* argv[]) {
 #ifdef _MSC_VER
   double Lx = 100;
   double Ly = 80;
-  double phi = 0.5;
+  double phi = 0.35;
   double Pe = 0;
   int n_step = 40000;
   double lambda = 3.;
@@ -96,6 +97,7 @@ int main(int argc, char* argv[]) {
   double Dr = atof(argv[7]);
   double h0 = atof(argv[8]);
   Vec_2<int> proc_size(atoi(argv[9]), atoi(argv[10]));
+  std::string ini_mode = argv[11];
   double lambda = 3.;
   double epsilon = 10.;
   double r_cut = 1.5;

@@ -6,7 +6,7 @@ import decode
 import numpy as np
 
 
-def save_as_extxyz(file_in):
+def save_as_extxyz(file_in, sep=None):
     file_out = file_in.replace(".bin", ".extxyz")
     fout = open(file_out, "w")
     para_dict = decode.get_para_from_file(file_in)
@@ -19,6 +19,8 @@ def save_as_extxyz(file_in):
         frames = decode.read_pos_theta(file_in, return_t=True)
         for i_frame, frame in enumerate(frames):
             t, x, y, theta = frame
+            if sep is not None and t % sep != 0:
+                continue
             theta += np.pi
             mask = theta > np.pi
             theta[mask] -= 2 * np.pi
@@ -34,6 +36,8 @@ def save_as_extxyz(file_in):
         frames = decode.read_pos(file_in, return_t=True)
         for i_frame, frame in enumerate(frames):
             t, x, y = frame
+            if sep is not None and t % sep != 0:
+                continue
             fout.write("%d\n%s\n" % (N, comment_line + "Time=%d" % t))
             lines = [
                 "N\t%f\t%f\n" % (x[i], y[i])
@@ -45,9 +49,9 @@ def save_as_extxyz(file_in):
 
 
 if __name__ == "__main__":
-    # fname = "D:\\data\\ABP_test\\Ly150\\AmABP_Lx2100_Ly150_p0.55_v-50_C6_Dr0.8.bin"
-    fname = "D:\\code\\BD\\BD2D_MPI_v2\\AmABP_Lx100_Ly80_p0.5_v0_C12_Dr3.bin"
-    save_as_extxyz(fname)
+    fname = "D:\\data\\ABP_test\\Ly150\\AmABP_Lx2100_Ly150_p0.4_v-50_C6_Dr0.8.bin"
+    # fname = "D:\\code\\BD\\BD2D_MPI_v2\\AmABP_Lx100_Ly80_p0.5_v0_C12_Dr3.bin"
+    save_as_extxyz(fname, 20000)
 
     # import glob
     # path = 'D:\\data\\ABP_test\\Ly25'
