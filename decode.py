@@ -53,7 +53,7 @@ def get_file_size(f):
     return file_size
 
 
-def read_pos(fin, show_frame_info=False, return_t=False):
+def read_pos(fin, sep, start=0):
     with open(fin, "rb") as f:
         file_size = get_file_size(f)
         buf = f.read(4)
@@ -68,21 +68,19 @@ def read_pos(fin, show_frame_info=False, return_t=False):
             info_size, = struct.unpack("i", buf)
             buf = f.read(info_size)
             info = buf.decode()
-            if show_frame_info:
-                print(info)
+            t = int(info.split("=")[1])
             buf = f.read(8)
             data_size, = struct.unpack("Q", buf)
-            buf = f.read(data_size)
-            data = struct.unpack("%df" % (data_size // 4), buf)
-            x, y = np.array(data).reshape(para_dict["N"], 2).T
-            if not return_t:
-                yield x, y
-            else:
-                t = get_t(info)
+            if (t % sep == 0 and t >= start):
+                buf = f.read(data_size)
+                data = struct.unpack("%df" % (data_size // 4), buf)
+                x, y = np.array(data).reshape(para_dict["N"], 2).T
                 yield t, x, y
+            else:
+                f.seek(data_size, 1)
 
 
-def read_pos_theta(fin, show_frame_info=False, return_t=False):
+def read_pos_theta(fin, sep, start=0):
     with open(fin, "rb") as f:
         file_size = get_file_size(f)
         buf = f.read(4)
@@ -91,36 +89,70 @@ def read_pos_theta(fin, show_frame_info=False, return_t=False):
         info = buf.decode()
         print(info)
         para_dict = get_para(info)
-
+        print("file size =", file_size)
         while f.tell() < file_size:
             buf = f.read(4)
             info_size, = struct.unpack("i", buf)
             buf = f.read(info_size)
             info = buf.decode()
-            if show_frame_info:
-                print(info)
+            t = int(info.split("=")[1])
             buf = f.read(8)
             data_size, = struct.unpack("Q", buf)
-            buf = f.read(data_size)
-            data = struct.unpack("%df" % (data_size // 4), buf)
-            x, y, theta = np.array(data).reshape(para_dict["N"], 3).T
-            if not return_t:
-                yield x, y, theta
-            else:
-                t = get_t(info)
+            if (t % sep == 0 and t >= start):
+                buf = f.read(data_size)
+                data = struct.unpack("%df" % (data_size // 4), buf)
+                x, y, theta = np.array(data).reshape(para_dict["N"], 3).T
                 yield t, x, y, theta
+            else:
+                f.seek(data_size, 1)
 
 
-# def get_last_frame(fin, save=True):
-#     file_out = fin.rstrip(".bin")
+def get_one_frame(file_in, t1=None):
+    fin = open(file_in, "rb")
+    fin_size = get_file_size(fin)
+    buf_0 = fin.read(4)
+    info_size, = struct.unpack("i", buf_0)
+    buf_1 = fin.read(info_size)
+    while fin.tell() < fin_size:
+        buf_2 = fin.read(4)
+        info_size, = struct.unpack("i", buf_2)
+        buf_3 = fin.read(info_size)
+        info = buf_3.decode()
+        t = int(info.split("=")[1])
+        buf_4 = fin.read(8)
+        data_size, = struct.unpack("Q", buf_4)
+        if (t1 is None and fin.tell() + data_size == fin_size) or t == t1:
+            buf_5 = fin.read(data_size)
+            if t1 is None:
+                t1 = t
+            break
+        else:
+            fin.seek(data_size, 1)
+    fin.close()
+
+    file_out = file_in.rstrip(".bin") + "_t%d.bin" % t1
+    fout = open(file_out, "wb")
+    fout.write(buf_0)
+    fout.write(buf_1)
+    fout.write(buf_2)
+    fout.write(buf_3)
+    fout.write(buf_4)
+    fout.write(buf_5)
+    fout.close()
 
 
 if __name__ == "__main__":
-    # fname = "AmABP_Lx40_Ly20_p0.7_v0_C12.bin"
-    fname = "D:\\data\\ABP_test\\PBC_MPI\\open_mpi\\AmABP_Lx150_Ly75_p0.55_v-180_C12.bin"
-    # show_file_info(fname)
-    frames = read_pos_theta(fname, True)
-    for x, y, theta in frames:
-        plt.plot(x, y, ".")
-        plt.show()
-        plt.close()
+    # # fname = "AmABP_Lx40_Ly20_p0.7_v0_C12.bin"
+    # fname = "D:\\data\\ABP_test\\PBC_MPI\\open_mpi\\AmABP_Lx150_Ly75_p0.55_v-180_C12.bin"
+    # # show_file_info(fname)
+    # frames = read_pos_theta(fname, True)
+    # for x, y, theta in frames:
+    #     plt.plot(x, y, ".")
+    #     plt.show()
+    #     plt.close()
+    # fname = "BD2D_MPI_v2\\AmABP_Lx50_Ly150_p0.01_v50_C6_Dr0.6.bin"
+    # para_dict = get_para_from_file(fname)
+    # print(para_dict)
+
+    fname = "D:\\data\\ABP_test\\Ly150\\AmABP_Lx2100_Ly150_p0.2_v-50_C6_Dr0.8.bin"
+    get_one_frame(fname)

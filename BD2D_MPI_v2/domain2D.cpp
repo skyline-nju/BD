@@ -99,7 +99,7 @@ void Domain_2::find_neighbor() {
       y_next = 0;
     }
     neighbor_[2] = rank.x + y_prev * proc_size_vec_.x;
-    neighbor_[3] = rank.x + y_prev * proc_size_vec_.x;
+    neighbor_[3] = rank.x + y_next * proc_size_vec_.x;
   } else {
     neighbor_[2] = neighbor_[3] = MPI_PROC_NULL;
   }

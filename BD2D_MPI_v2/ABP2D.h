@@ -74,7 +74,10 @@ void ini_rand(std::vector<BiNode<TPar>>& p_arr, int n_par_gl, TDomain& dm,
       }
     } while (sigma_new < sigma);
   }
-
+  //for (auto& p : p_arr) {
+  //  p.u.x = 0;
+  //  p.u.y = 1;
+  //}
   if (my_rank == 0) {
     std::cout << "initialized randomly!\n";
     std::cout << "************************************\n" << std::endl;
