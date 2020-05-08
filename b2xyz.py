@@ -75,25 +75,50 @@ def save_as_extxyz(file_in, sep, mod="w", Janus=False):
     fout.close()
 
 
+def handle_files(folder, sep=10000):
+    import glob
+    import os
+    files_in = glob.glob(folder + os.path.sep + "*.bin")
+    files_fault = []
+    for f in files_in:
+        fout = f.replace(".bin", ".extxyz")
+        if os.path.exists(fout):
+            if os.stat(fout).st_mtime > os.stat(f).st_mtime:
+                continue
+            mode = "a"
+        else:
+            mode = "w"
+        try:
+            save_as_extxyz(f, sep, mode)
+        except KeyError:
+            files_fault.append(f)
+    
+    print("The follwing files are failed:")
+    for f in files_fault:
+        print(f)
+
+
 if __name__ == "__main__":
     # fname = "D:\\data\\ABP_test\\Ly150\\AmABP_Lx2100_Ly150_p0.2_v-50_C6_Dr0.8_t51120000.bin"
-    # fname = "D:\\data\\ABP_test\\Ly150\\AmABP_Lx2100_Ly150_p0.15_v-50_C6_Dr0.8.bin"
-    # fname = "D:\\data\\ABP_test\\Ly150_ini_ordered\\AmABP_Lx2100_Ly150_p0.4_v-50_C6_Dr0.8.bin"
+    # fname = "D:\\data\\ABP_test\\Ly150\\AmABP_Lx2100_Ly150_p0.1_v-50_C6_Dr0.8.bin"
+    # fname = "D:\\data\\ABP_test\\Ly150_ini_ordered\\AmABP_Lx2100_Ly150_p0.45_v-50_C6_Dr0.8_t22260000.bin"
     # fname = "D:\\data\\ABP_test\\Ly300\\AmABP_Lx2100_Ly300_p0.4_v-50_C6_Dr0.8.bin"
     # fname = "D:\\code\\BD\\BD2D_MPI_v2\\AmABP_Lx100_Ly80_p0.5_v0_C12_Dr3.bin"
     # fname = "D:\\data\\ABP_test\\Ly600\\AmABP_Lx1050_Ly600_p0.5_v-50_C6_Dr0.8.bin"
-    # fname = "D:\\data\\ABP_test\\Ly600\\AmABP_Lx1050_Ly1050_p0.2_v-50_C6_Dr0.8.bin"
+    # fname = "D:\\data\\ABP_test\\Ly600\\AmABP_Lx1050_Ly1050_p0.4_v-50_C6_Dr0.8.bin"
 
     # fname = "BD2D_MPI_v2\\AmABP_Lx50_Ly150_p0.01_v-50_C6_Dr0.6.bin"
-    fname = "D:\\data\\ABP_test\\Ly150_slow\\AmABP_Lx2100_Ly150_p0.2_v-50_C6_Dr0.8_t51120000.bin"
-    save_as_extxyz(fname, 4000, "w", True)
+    # fname = "D:\\data\\ABP_test\\Ly150_ini_ordered\\AmABP_Lx2100_Ly150_p0.45_v-50_C6_Dr0.8_t22260000.bin"
+    # fname = "D:\\data\\ABP_test\\1050_1050\\AmABP_Lx1500_Ly1500_p0.2_v-50_C6_Dr0.8_t14520000.bin"
+    # save_as_extxyz(fname, 20000, "a")
 
-    # import glob
-    # path = 'G:\\data\\AmABP\\200_100'
-    # # path = 'D:\\code\\BD\\BD2D_MPI_v2'
-    # files = glob.glob("%s\\*.bin" % path)
-    # for fname in files:
-    #     save_as_extxyz(fname, 10000)
-
-    # fname = "D:\\data\\ABP_test\\Ly600\\AmABP_Lx1050_Ly1050_p0.2_v-50_C6_Dr0.8.extxyz"
-    # get_last_t(fname)
+    # folder = "D:\\data\\AmABP\\Lx600\\ini_rand"
+    # folder = "D:\\data\\AmABP\\phase_diagram\\C12_200_100_ordered"
+    folder = "G:\\data\\AmABP\\Lx4800\\ini_ordered"
+    handle_files(folder, sep=1)
+    # fname = folder + "\\AmABP_Lx200_Ly100_p0.2_v-180_C12_Dr3.bin"
+    # # n = decode.get_n_frames(fname)
+    # # print("n = %d" % n)
+    # frames = decode.read_pos_theta(fname, 1)
+    # for i, frame in enumerate(frames):
+    #     print("i =", i)

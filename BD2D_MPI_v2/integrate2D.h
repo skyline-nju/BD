@@ -28,21 +28,22 @@ void EM_BD_iso::update(TPar& p, const BdyCondi& bc, TRan& myran) const {
 
 class EM_ABD_iso: public EM_BD_iso {
 public:
-  EM_ABD_iso(double h, double Pe) : EM_BD_iso(h), Dr_(std::sqrt(72. * h)), Pe_(Pe) {}
+  EM_ABD_iso(double h, double Pe) : EM_BD_iso(h), Dr_(3), sqrt_Dr_(std::sqrt(72. * h)), Pe_(Pe) {}
 
   template <class TPar, class BdyCondi, class TRan>
   void update(TPar& p, const BdyCondi& bc, TRan& myran) const;
 
   void set_Pe(double Pe) { Pe_ = Pe; }
-  void set_Dr(double Dr) { Dr_ = std::sqrt(24. * h_ * Dr); }
+  void set_Dr(double Dr) { Dr_ = Dr; sqrt_Dr_ = std::sqrt(24. * h_ * Dr); }
 protected:
-  double Dr_; // sqrt(72 * h) by default
+  double Dr_;
+  double sqrt_Dr_; // sqrt(72 * h) by default
   double Pe_;
 };
 
 template<class TPar, class BdyCondi, class TRan>
 void EM_ABD_iso::update(TPar& p, const BdyCondi& bc, TRan& myran) const {
-  const double d_theta = (myran.doub() - 0.5) * Dr_;
+  const double d_theta = (myran.doub() - 0.5) * sqrt_Dr_;
   Vec_2<double> u = p.update_ori(d_theta);
   p.pos.x += (p.f.x + u.x * Pe_) * h_ + (myran.doub() - 0.5) * Dt_;
   p.pos.y += (p.f.y + u.y * Pe_) * h_ + (myran.doub() - 0.5) * Dt_;
@@ -61,7 +62,7 @@ public:
 
 template<typename TPar, class BdyCondi, class TRan>
 void EM_ABD_aniso::update(TPar& p, const BdyCondi& bc, TRan& myran) const {
-  const double d_theta = p.tau * 3. * h_ + (myran.doub() - 0.5) * Dr_;
+  const double d_theta = p.tau * Dr_ * h_ + (myran.doub() - 0.5) * sqrt_Dr_;
   Vec_2<double> u = p.update_ori(d_theta);
   p.pos.x += (p.f.x + u.x * Pe_) * h_ + (myran.doub() - 0.5) * Dt_;
   p.pos.y += (p.f.y + u.y * Pe_) * h_ + (myran.doub() - 0.5) * Dt_;
