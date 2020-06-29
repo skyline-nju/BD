@@ -34,7 +34,7 @@ public:
 
   template <typename TPar, typename PairForce, typename BdyCondi>
   void cal_force(std::vector<BiNode<TPar>>& p_arr, CellList_2<TPar>& cl, 
-                 const PairForce& f12, const BdyCondi& bc);
+                 const PairForce& f12, const BdyCondi& bc, bool need_ori);
   template <typename TPar, typename TInteg, typename BdyCondi, typename TRan>
   void integrate(std::vector<BiNode<TPar>>& p_arr, CellList_2<TPar>& cl,
                  const TInteg& integrator, const BdyCondi& bc, TRan& myran);
@@ -92,12 +92,21 @@ void Domain_2::communicate(int dir, FuncPack pack, FuncUnpack unpack, FuncDoSth 
 
 template <typename TPar, typename PairForce, typename BdyCondi>
 void Domain_2::cal_force(std::vector<BiNode<TPar>>& p_arr, CellList_2<TPar>& cl,
-                     const PairForce& f12, const BdyCondi& bc){
-  auto pack = [&cl](double* buf, int idx)->int {
-    return cl.pack_pos(buf, cl.get_inner_edge(idx));
+                     const PairForce& f12, const BdyCondi& bc, bool need_ori){
+  auto pack = [&cl, need_ori](double* buf, int idx)->int {
+    if (need_ori) {
+      return cl.pack_pos_ori(buf, cl.get_inner_edge(idx));
+    } else {
+      return cl.pack_pos(buf, cl.get_inner_edge(idx));
+    }
   };
-  auto unpack = [&cl, &p_arr](const double* buf, int buf_size) {
-    cl.unpack_pos(buf, buf_size, p_arr);
+  auto unpack = [&cl, &p_arr, need_ori](const double* buf, int buf_size) {
+    if (need_ori) {
+      cl.unpack_pos_ori(buf, buf_size, p_arr);
+
+    } else {
+      cl.unpack_pos(buf, buf_size, p_arr);
+    }
   };
 
   int par_num0 = static_cast<int>(p_arr.size());

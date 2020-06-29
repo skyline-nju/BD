@@ -1,9 +1,19 @@
 /**
- * @brief Two types of exclusion interactions for SPP: 1) mechanical exclusion,
- *        wherein two particles mechanically repel each other when they overlap;
- *        2) scattering exclusion, wherein the directions along which each object
- *        tries to move are modulated to avoid overlapping.
- *        Ref: PHYSICAL REVIEW E 99, 012614 (2019)
+ * @file biExclusion.h
+ * @author Yu Duan (duanyu.nju@qq.com)
+ * @brief SPP with two types of exclustion interactions.
+ * @version 0.1
+ * @date 2020-06-29
+ * 
+ * Two types of exclusion interactions for SPP: 1) mechanical exclusion,
+ * wherein two particles mechanically repel each other when overlapping;
+ * 2) scattering exclusion, wherein the directions along which each object
+ * tries to move are modulated to avoid overlapping.
+ * 
+ * Ref: PHYSICAL REVIEW E 99, 012614 (2019)
+ * 
+ * @copyright Copyright (c) 2020
+ * 
  */
 
 #pragma once

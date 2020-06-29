@@ -69,15 +69,17 @@ void ini_rand(std::vector<BiNode<TPar>>& p_arr, int n_par_gl, TDomain& dm,
       pair_force.set_sigma(sigma_new);
       for (int i = 0; i < 500; i++) {
         //std::cout << "i = " << i << std::endl;
-        dm.cal_force(p_arr, cl, pair_force, bc);
+        dm.cal_force(p_arr, cl, pair_force, bc, false);
         dm.integrate(p_arr, cl, integrator, bc, myran);
       }
     } while (sigma_new < sigma);
   }
-  //for (auto& p : p_arr) {
-  //  p.u.x = 0;
-  //  p.u.y = 1;
-  //}
+#ifdef INI_ORDERED
+  for (auto& p : p_arr) {
+    p.u.x = -1;
+    p.u.y = 0;
+  }
+#endif
   if (my_rank == 0) {
     std::cout << "initialized randomly!\n";
     std::cout << "************************************\n" << std::endl;

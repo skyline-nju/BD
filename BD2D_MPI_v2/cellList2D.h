@@ -113,8 +113,10 @@ public:
   void compact(std::vector<node_t>& p_arr, std::deque<int>& vacancy);
 
   int pack_pos(double* buf, const Block_2& block) const;
-
   void unpack_pos(const double* buf, int buf_size, std::vector<node_t>& p_arr);
+
+  int pack_pos_ori(double* buf, const Block_2& block) const;
+  void unpack_pos_ori(const double* buf, int buf_size, std::vector<node_t>& p_arr);
 
   int pack_leaving_par(double* buf, const Block_2& block,
     const std::vector<node_t>& p_arr, std::deque<int>& vacancy);
@@ -295,6 +297,55 @@ void CellList_2<TPar>::unpack_pos(const double* buf, int buf_size, std::vector<n
     p_arr.emplace_back();
     auto& p = p_arr.back();
     p.copy_pos_from(buf, buf_pos);
+    p.pos += offset;
+    add_node(p);
+  }
+}
+
+template<typename TPar>
+int CellList_2<TPar>::pack_pos_ori(double* buf, const Block_2& block) const {
+  int buf_pos = 0;
+#ifdef USE_LAMBDA
+  auto f = [this, &buf_pos, buf](int i) {
+    node_t* head_node = head_[i];
+    if (head_node) {
+      node_t* cur_node = head_node;
+      do {
+        cur_node->copy_to(buf, buf_pos);
+        cur_node = cur_node->next;
+      } while (cur_node);
+    }
+  };
+  for_each(block, n_, f);
+#else
+  const Vec_2<int>& beg = block.o;
+  const Vec_2<int> end = block.get_end();
+  for (int iy = beg.y; iy < end.y; iy++) {
+    int nx_iy = n_.x * iy;
+    for (int ix = beg.x; ix < end.x; ix++) {
+      node_t* head_node = head_[ix + nx_iy];
+      if (head_node) {
+        node_t* cur_node = head_node;
+        do {
+          cur_node->copy_to(buf, buf_pos);
+          cur_node = cur_node->next;
+        } while (cur_node);
+      }
+    }
+  }
+#endif
+  return buf_pos;
+}
+
+template<typename TPar>
+void CellList_2<TPar>::unpack_pos_ori(const double* buf, int buf_size, std::vector<node_t>& p_arr) {
+                                  Vec_2<double> offset{};
+  cal_pos_offset(offset, Vec_2<double>(buf[0], buf[1]));
+  int buf_pos = 0;
+  while (buf_pos < buf_size) {
+    p_arr.emplace_back();
+    auto& p = p_arr.back();
+    p.copy_from(buf, buf_pos);
     p.pos += offset;
     add_node(p);
   }

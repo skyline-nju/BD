@@ -42,7 +42,10 @@
     <ClInclude Include="ABP2D.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="twoExclusion.h">
+    <ClInclude Include="vicsek.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="biExclusion.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -59,7 +62,10 @@
     <ClCompile Include="ABP2D.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="twoExclusion.cpp">
+    <ClCompile Include="biExclusion.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="vicsek.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
