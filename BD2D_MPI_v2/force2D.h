@@ -26,6 +26,7 @@ private:
   double r_cut_square_;
 };
 
+
 class WCAForce_2 {
 public:
   WCAForce_2() = default;
@@ -124,6 +125,7 @@ inline std::string SpringForce_2::get_info() const {
   snprintf(info, 200, "spring force--k:%g", spring_const_);
   return info;
 }
+
 
 inline void WCAForce_2::cal_force(double r12_square, const Vec_2<double>& r12_vec, Vec_2<double>& f12_vec) const {
   double r_2 = sigma_square_ / r12_square;

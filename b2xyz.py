@@ -4,6 +4,7 @@ Transfer .bin file to .extxyz file.
 """
 import decode
 import numpy as np
+import os
 
 
 def get_last_t(file_in):
@@ -32,8 +33,13 @@ def save_as_extxyz(file_in, sep, mod="w", Janus=False):
         t_start = 0
         fout = open(file_out, "w")
     para_dict = decode.get_para_from_file(file_in)
+    print(para_dict)
     N = para_dict["N"]
     Lx = para_dict["Lx"]
+    Lx2 = int(os.path.basename(file_in).split("_")[1].lstrip("Lx"))
+    if Lx != Lx2:
+        Lx = Lx2
+        N *= 2
     Ly = para_dict["Ly"]
     comment_line = "Lattice=\"%g 0 0 0 %g 0 0 0 1\" " % (Lx, Ly)
     if "theta" in para_dict["data"]:
@@ -88,10 +94,11 @@ def handle_files(folder, sep=10000):
             mode = "a"
         else:
             mode = "w"
-        try:
-            save_as_extxyz(f, sep, mode)
-        except KeyError:
-            files_fault.append(f)
+        # try:
+        #     save_as_extxyz(f, sep, mode)
+        # except KeyError:
+        #     files_fault.append(f)
+        save_as_extxyz(f, sep, mode)
     
     print("The follwing files are failed:")
     for f in files_fault:
@@ -112,9 +119,13 @@ if __name__ == "__main__":
     # fname = "D:\\data\\ABP_test\\1050_1050\\AmABP_Lx1500_Ly1500_p0.2_v-50_C6_Dr0.8_t14520000.bin"
     # save_as_extxyz(fname, 20000, "a")
 
-    # folder = "D:\\data\\AmABP\\Lx600\\ini_rand"
+    # folder = "D:\\data\\AmABP\\Lx600\\ini_ordered"
     # folder = "D:\\data\\AmABP\\phase_diagram\\C12_200_100_ordered"
-    folder = "G:\\data\\AmABP\\Lx4800\\ini_ordered"
+    folder = r"G:\data\AmABP\Lx2400\ini_ordered\new"
+    # folder = r"D:\data\AmABP\cell2"
+    # folder = r"D:\data\AmABP\Lx1200\ini_ordered"
+    # folder = r"D:\data\AmABP\Lx1200\ini_ordered"
+    # folder = r"G:\data\AmABP\Lx2400\ini_ordered"
     handle_files(folder, sep=1)
     # fname = folder + "\\AmABP_Lx200_Ly100_p0.2_v-180_C12_Dr3.bin"
     # # n = decode.get_n_frames(fname)

@@ -150,10 +150,12 @@
     <ClInclude Include="integrate2D.h" />
     <ClInclude Include="iodata2D.h" />
     <ClInclude Include="particle2D.h" />
+    <ClInclude Include="twoExclusion.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ABP2D.cpp" />
     <ClCompile Include="cellList2D.cpp" />
+    <ClCompile Include="twoExclusion.cpp" />
     <ClCompile Include="domain2D.cpp" />
     <ClCompile Include="iodata2D.cpp" />
   </ItemGroup>

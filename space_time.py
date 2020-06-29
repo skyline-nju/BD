@@ -55,7 +55,11 @@ def plot_space_time_img(f_npz, tmax=None, dt=0.5, show=False):
         tmax = rho_x.shape[0]
         print("max t =", tmax)
     fig, (ax1, ax2) = plt.subplots(
-        ncols=1, nrows=2, constrained_layout="true", sharex=True)
+        ncols=1,
+        nrows=2,
+        constrained_layout="true",
+        sharex=True,
+        figsize=(16, 6))
     extent = [0, tmax * dt, 1, 0]
     im1 = ax1.imshow(rho_x.T, aspect="auto", extent=extent)
     cb1 = plt.colorbar(im1, ax=ax1)
@@ -75,7 +79,7 @@ def plot_space_time_img(f_npz, tmax=None, dt=0.5, show=False):
     npzfile.close()
 
 
-def handle_files(folder):
+def handle_files(folder, show=False):
     os.chdir(folder)
     if not os.path.exists("space_time"):
         os.mkdir("space_time")
@@ -98,7 +102,22 @@ def handle_files(folder):
         np.savez_compressed(f_npz, rho_x=rho_x, px_x=px_x, py_x=py_x)
     files_npz = glob.glob("space_time\\*.npz")
     for f_npz in files_npz:
-        plot_space_time_img(f_npz, tmax=None, dt=0.5, show=False)
+        plot_space_time_img(f_npz, tmax=None, dt=0.5, show=show)
+
+
+def plot_profile(f_npz, beg):
+    npzfile = np.load(f_npz)
+    rho_x = npzfile["rho_x"][beg:] * np.pi / 4
+    px_x = npzfile["px_x"][beg:]
+    plt.ion()
+    n = rho_x.shape[0]
+    for i in range(n):
+        plt.plot(rho_x[i])
+        plt.ylim(0.1, 1.1)
+        plt.title(r"$\phi=%.2f$" % np.mean(rho_x))
+        plt.pause(0.1)
+        plt.clf()
+    plt.close()
 
 
 if __name__ == "__main__":
@@ -109,6 +128,11 @@ if __name__ == "__main__":
     # os.chdir("D:\\data\\AmABP\\Lx%d\\ini_%s" % (Lx, ini_mode))
     # fname = "AmABP_Lx%d_Ly%d_p%g_v-180_C12_Dr3.bin" % (Lx, Ly, phi)
     # plot_space_time_img(fname, None)
-    # folder = r"D:\data\AmABP\Lx3600\ini_rand"
-    folder = r"G:\data\AmABP\Lx4800\ini_ordered"
-    handle_files(folder)
+    folder = r"G:\data\AmABP\Lx2400\ini_ordered"
+    # folder = r"G:\data\AmABP\Lx3600\ini_rand"
+    handle_files(folder, False)
+
+    # f_npz = "G:\\data\\AmABP\\Lx2400\\ini_rand\\space_time\\AmABP_Lx2400_Ly100_p0.55_v-180_C12_Dr3.npz"
+
+    # plot_profile(f_npz, 0)
+

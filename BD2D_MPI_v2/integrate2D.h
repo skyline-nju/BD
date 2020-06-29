@@ -71,3 +71,25 @@ void EM_ABD_aniso::update(TPar& p, const BdyCondi& bc, TRan& myran) const {
   p.f.y = 0.;
   p.tau = 0.;
 }
+
+class EM_ABD_aniso_Dt0 : public EM_ABD_iso {
+public:
+  EM_ABD_aniso_Dt0(double h, double Pe) : EM_ABD_iso(h, Pe) {}
+
+  template <typename TPar, class BdyCondi, class TRan>
+  void update(TPar& p, const BdyCondi& bc, TRan& myran) const;
+};
+
+template<typename TPar, class BdyCondi, class TRan>
+void EM_ABD_aniso_Dt0::update(TPar& p, const BdyCondi& bc, TRan& myran) const {
+  //const double d_theta = p.tau * Dr_ * h_ + (myran.doub() - 0.5) * sqrt_Dr_;
+  const double d_theta = p.tau * h_ + (myran.doub() - 0.5) * sqrt_Dr_;
+
+  Vec_2<double> u = p.update_ori(d_theta);
+  p.pos.x += (p.f.x + u.x * Pe_) * h_;
+  p.pos.y += (p.f.y + u.y * Pe_) * h_;
+  bc.tangle(p.pos);
+  p.f.x = 0.;
+  p.f.y = 0.;
+  p.tau = 0.;
+}
