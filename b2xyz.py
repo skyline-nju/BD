@@ -119,9 +119,9 @@ if __name__ == "__main__":
     # fname = "D:\\data\\ABP_test\\1050_1050\\AmABP_Lx1500_Ly1500_p0.2_v-50_C6_Dr0.8_t14520000.bin"
     # save_as_extxyz(fname, 20000, "a")
 
-    # folder = "D:\\data\\AmABP\\Lx600\\ini_ordered"
+    folder = "D:\\data\\AmABP\\ini_ordered2\\Lx1200"
     # folder = "D:\\data\\AmABP\\phase_diagram\\C12_200_100_ordered"
-    folder = r"G:\data\AmABP\Lx2400\ini_ordered\new"
+    # folder = r"G:\data\AmABP\Lx2400\ini_ordered\new"
     # folder = r"D:\data\AmABP\cell2"
     # folder = r"D:\data\AmABP\Lx1200\ini_ordered"
     # folder = r"D:\data\AmABP\Lx1200\ini_ordered"

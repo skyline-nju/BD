@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
     cl.create(p_arr);
     dm.set_buf(r_cut, 10);
     for (int i = 1; i <= n_step; i++) {
-      dm.cal_force(p_arr, cl, f_rep, bc);
+      dm.cal_force(p_arr, cl, f_rep, bc, true);
       dm.integrate(p_arr, cl, integrator, bc, myran);
       exporter(i, p_arr);
     }

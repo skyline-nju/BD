@@ -10,8 +10,12 @@
  */
 #include "AmABP.h"
 
-void AmphiphilicWCA_2::cal_force_torque(double r12_square, const Vec_2<double>& r12_vec, Vec_2<double>& f12_vec,
-  const Vec_2<double>& q1, const Vec_2<double>& q2, double& tau1, double& tau2) const {
+void AmphiphilicWCA_2::cal_force_torque(double r12_square,
+                                        const Vec_2<double>& r12_vec,
+                                        Vec_2<double>& f12_vec,
+                                        const Vec_2<double>& q1,
+                                        const Vec_2<double>& q2,
+                                        double& tau1, double& tau2) const {
   double r = sqrt(r12_square);
   double r_2 = 1. / r12_square;
   double grad_V_pre = (lambda_ * r + 2.) * r_2;

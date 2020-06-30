@@ -20,7 +20,7 @@
 #include "ABP2D.h"
 #include <typeinfo>
 
- // U(r12_vec, q1, q2) = C * exp(-lambda(r-1.))/r12**2 (q1 - q2) * r21_vec
+ // U(r12_vec, q1, q2) = C * exp(-lambda(r-1.))/r12^2 (q1 - q2) * r21_vec
 class AmphiphilicWCA_2 {
 public:
   AmphiphilicWCA_2() = default;

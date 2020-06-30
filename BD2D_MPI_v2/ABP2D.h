@@ -12,7 +12,7 @@
 
 template <typename TDomain, typename TPar, typename BdyCondi>
 void ini_rand(std::vector<BiNode<TPar>>& p_arr, int n_par_gl, TDomain& dm,
-              const BdyCondi& bc, double sigma = 1.) {
+              const BdyCondi& bc, double sigma = 1., bool avoid_overlap=true) {
   const Box_2<double>& box = dm.get_box();
   int n_max = int(box.l.x * box.l.y / (sigma * sigma) * 5);
   int my_rank = dm.get_proc_rank();
@@ -51,7 +51,7 @@ void ini_rand(std::vector<BiNode<TPar>>& p_arr, int n_par_gl, TDomain& dm,
   }
   Ranq2 myran(1 + my_rank);
 
-  if (n_par_gl < box.l.x * box.l.y / (sigma * sigma) / 2) {
+  if (!avoid_overlap || (n_par_gl < box.l.x * box.l.y / (sigma * sigma) / 2)) {
     create_rand_par_2(p_arr, n_par, origin, l, bc, myran, sigma);
   } else {
     double r_cut = sigma;
