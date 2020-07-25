@@ -14,23 +14,6 @@ std::string add_suffix(const std::string& str, const std::string& suffix) {
   return res;
 }
 
-void ExporterBase::set_lin_frame(int start, int n_step, int sep) {
-  n_step_ = n_step;
-  for (auto i = start + sep; i <= n_step_; i += sep) {
-    frames_arr_.push_back(i);
-  }
-  frame_iter_ = frames_arr_.begin();
-}
-
-bool ExporterBase::need_export(int i_step) {
-  bool flag = false;
-  if (!frames_arr_.empty() && i_step == (*frame_iter_)) {
-    frame_iter_++;
-    flag = true;
-  }
-  return flag;
-}
-
 #ifdef USE_MPI
 LogExporter::LogExporter(const std::string& outfile, 
                          int start, int n_step, int sep, 
@@ -101,9 +84,9 @@ void LogExporter::record(int i_step) {
 #ifdef USE_MPI
   int my_rank;
   MPI_Comm_rank(comm_, &my_rank);
-  flag = my_rank == 0 && need_export(i_step);
+  flag = my_rank == 0 && i_step % sep_ == 0;
 #else
-  flag = need_export(i_step);
+  flag = i_step % sep_ == 0;
 #endif
   if (flag) {
     const auto t_now = std::chrono::system_clock::now();
@@ -122,9 +105,9 @@ XyzExporter_2::XyzExporter_2(const std::string& outfile,
   int start, int n_step, int sep, const Vec_2<double>& gl_l)
   : ExporterBase(start, n_step, sep), gl_l_(gl_l) {
   if (start == 0) {
-    fout_(add_suffix(outfile, ".extxyz"));
+    fout_.open(add_suffix(outfile, ".extxyz"));
   } else {
-    fout_(add_suffix(outfile, ".extxyz"), std::ios::app);
+    fout_.open(add_suffix(outfile, ".extxyz"), std::ios::app);
   }
 }
 
@@ -134,8 +117,10 @@ XyzExporter_2::XyzExporter_2(const std::string& outfile, int start, int n_step, 
   : ExporterBase(start, n_step, sep), gl_l_(gl_l) {
   int my_rank;
   MPI_Comm_rank(group_comm, &my_rank);
+  //MPI_Comm_size(group_comm, &tot_proc_);
   char filename[100];
   snprintf(filename, 100, "%s_n%d.extxyz", outfile.c_str(), my_rank);
+
   if (start == 0) {
     fout_.open(filename);
   } else {
@@ -269,3 +254,74 @@ void load_last_frame(const std::string& filein, float* buf, int &t_last) {
   }
   fin.close();
 }
+
+#ifndef USE_MPI
+GSD_Snapshot_2::GSD_Snapshot_2(const std::string& filename, int start, int n_step, int sep,
+                               const Vec_2<double>& gl_l)
+                               : ExporterBase(start, n_step, sep) {
+
+}
+
+#else
+GSD_Snapshot_2::GSD_Snapshot_2(const std::string& filename, 
+                               int start, int n_step, int sep,
+                               const Vec_2<double> & gl_l, MPI_Comm group_comm,
+                               const std::string& open_flag)
+                               : ExporterBase(start, n_step, sep), comm_(group_comm) {
+  MPI_Comm_rank(comm_, &my_rank_);
+  MPI_Comm_size(comm_, &tot_proc_);
+  unsigned int version = gsd_make_version(1, 4);
+  char fname[100];
+  snprintf(fname, 100, "%s", add_suffix(filename, ".gsd").c_str());
+  if (my_rank_ == 0) {
+    handle_ = new gsd_handle;
+    if (open_flag == "w") {
+      gsd_create(fname, "cpp", "hoomd", version);
+      gsd_open(handle_, fname, GSD_OPEN_READWRITE);
+      float* box = new float[6]();
+      box[0] = gl_l.x;
+      box[1] = gl_l.y;
+      box[2] = 1;
+      gsd_write_chunk(handle_, "configuration/box", GSD_TYPE_FLOAT, 6, 1, 0, box);
+    } else if (open_flag == "r") {
+      gsd_open(handle_, fname, GSD_OPEN_READONLY);
+    } else if (open_flag == "a") {
+      gsd_open(handle_, fname, GSD_OPEN_APPEND);
+    } else {
+      std::cout << "Wrong open flag, must be one of 'a', 'w' or 'r'!" << std::endl;
+      exit(1);
+    }
+  }
+}
+
+GSD_Snapshot_2::~GSD_Snapshot_2() {
+  if (my_rank_ == 0) {
+    gsd_close(handle_);
+    delete handle_;
+  }
+}
+void GSD_Snapshot_2::load_frame(int i, float* buf, int buf_size) {
+  if (my_rank_ == 0) {
+    int i_frame = i;
+    int n_frame = gsd_get_nframes(handle_);
+    if (i_frame >= n_frame) {
+      std::cout << i_frame << "should be less than total frames " << n_frame << std::endl;
+      exit(1);
+    } else if (i_frame == -1) {
+      i_frame = n_frame - 1;
+    }
+    const gsd_index_entry* chunk_N = gsd_find_chunk(handle_, i_frame, "particles/N");
+    unsigned int n;
+    gsd_read_chunk(handle_, &n, chunk_N);
+    if (n * 3 != buf_size) {
+      std::cout << "buf size is not matched with particle numbers" << std::endl;
+      exit(1);
+    }
+    const gsd_index_entry* chunk = gsd_find_chunk(handle_, i_frame, "particles/position");
+    gsd_read_chunk(handle_, buf, chunk);
+  }
+#ifdef USE_MPI
+  MPI_Bcast(buf, buf_size, MPI_FLOAT, 0, comm_);
+#endif
+}
+#endif

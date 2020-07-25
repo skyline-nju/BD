@@ -88,6 +88,31 @@ void ini_rand(std::vector<BiNode<TPar>>& p_arr, int n_par_gl, TDomain& dm,
 }
 
 template <typename TPar, typename TDomain>
+void ini_from_gsd(const std::string& file_in, std::vector<BiNode<TPar>>& p_arr,
+                  int n_par_gl, const TDomain& dm, bool oppsite_ori, double sigma = 1.) {
+  GSD_Snapshot_2 snap(file_in, 0, 10000, 100, dm.get_gl_l(), dm.get_comm(), "r");
+  int buf_size = n_par_gl * 3;
+  float* buf = new float[buf_size];
+  snap.load_frame(-1, buf, buf_size);
+  PeriodicBdyCondi_2 pbc(dm.get_gl_l());
+  const Box_2<double> box = dm.get_box();
+  int n_max = int(box.l.x * box.l.y / (sigma * sigma) * 5);
+  p_arr.reserve(n_max);
+  int buf_pos = 0;
+  while (buf_pos < buf_size) {
+    BiNode<TPar> p{};
+    p.load_from_file(buf, buf_pos);
+    pbc.tangle(p.pos);
+    if (box.within(p.pos)) {
+      if (oppsite_ori) {
+        p.u = -p.u;
+      }
+      p_arr.push_back(p);
+    }
+  }
+
+}
+template <typename TPar, typename TDomain>
 void ini_from_file(const std::string& file_in, std::vector<BiNode<TPar>>& p_arr,
                    int n_par_gl, int &t_last, const TDomain& dm, double sigma = 1.) {
   int float_per_par = 0;

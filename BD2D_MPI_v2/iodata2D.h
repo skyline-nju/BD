@@ -8,6 +8,7 @@
 #include <iomanip>
 #include "config.h"
 #include "particle2D.h"
+#include "gsd.h"
 
 #ifdef USE_MPI
 #include "mpi.h"
@@ -28,21 +29,12 @@ std::string add_suffix(const std::string& str, const std::string& suffix);
  */
 class ExporterBase {
 public:
-  ExporterBase(int start, int n_step, int sep) : start_(start), n_step_(n_step), sep_(sep) {
-    set_lin_frame(start, n_step, sep);
-  }
-
-  void set_lin_frame(int start, int n_step, int sep);
-
-  bool need_export(const int i_step);
+  ExporterBase(int start, int n_step, int sep) : start_(start), n_step_(n_step), sep_(sep) {}
 
 protected:
   int n_step_;    // total steps to run
   int start_ = 0; // The first step
   int sep_;
-private:
-  std::vector<int> frames_arr_; // frames that need to export
-  std::vector<int>::iterator frame_iter_;
 };
 
 /**
@@ -101,7 +93,6 @@ private:
 
 template <typename TPar>
 void XyzExporter_2::dump_pos(int i_step, const std::vector<TPar>& par_arr) {
-  //if (need_export(i_step)) {
   if (i_step % sep_ == 0) {
     int n_par = par_arr.size();
     fout_ << n_par << "\n";
@@ -221,3 +212,85 @@ void SnapExporter_2::dump_pos_ori(int i_step, const std::vector<TPar>& p_arr) {
 }
 
 void load_last_frame(const std::string& filein, float* buf, int& t_last);
+
+class GSD_Snapshot_2 : public ExporterBase {
+public:
+#ifndef USE_MPI
+  GSD_Snapshot_2(const std::string& filename, int start, int n_step, int sep, const Vec_2<double> & gl_l);
+#else
+  GSD_Snapshot_2(const std::string& filename, int start, int n_step, int sep, 
+                 const Vec_2<double>& gl_l, MPI_Comm group_comm, const std::string& open_flag);
+#endif
+
+  ~GSD_Snapshot_2();
+
+  template <typename TPar>
+  void dump(int i_step, const std::vector<TPar>& p_arr, bool oppsite_ori);
+
+  void load_frame(int i, float* buf, int buf_size);
+
+private:
+  gsd_handle* handle_ = nullptr;
+
+#ifdef USE_MPI
+  MPI_Comm comm_;
+  int my_rank_;
+  int tot_proc_;
+#endif
+
+};
+
+template <typename TPar>
+void GSD_Snapshot_2::dump(int i_step, const std::vector<TPar>& p_arr, bool oppsite_ori) {
+  if (i_step % sep_ == 0) {
+    int n_par = p_arr.size();
+    float* buf = new float[3 * n_par];
+    for (int j = 0; j < n_par; j++) {
+      buf[j * 3 + 0] = float(p_arr[j].pos.x);
+      buf[j * 3 + 1] = float(p_arr[j].pos.y);
+      double theta = p_arr[j].get_ori();
+      if (oppsite_ori) {
+        if (theta > 0) {
+          theta -= M_PI;
+        } else {
+          theta += M_PI;
+        }
+      }
+      buf[j * 3 + 2] = theta;
+    }
+
+#ifdef USE_MPI
+    int* n_par_arr = new int[tot_proc_];
+    MPI_Gather(&n_par, 1, MPI_INT, n_par_arr, 1, MPI_INT, 0, comm_);
+    int* recvcounts = new int[tot_proc_]();
+    int* displs = new int[tot_proc_]();
+    float* buf_gl = nullptr;
+    int n_par_gl = 0;
+    if (my_rank_ == 0) {
+      for (int i = 0; i < tot_proc_; i++) {
+        recvcounts[i] = n_par_arr[i] * 3;
+        n_par_gl += n_par_arr[i];
+      }
+      displs[0] = 0;
+      for (int i = 1; i < tot_proc_; i++) {
+        displs[i] = displs[i - 1] + recvcounts[i - 1];
+      }
+ 
+      buf_gl = new float[n_par_gl * 3];
+    }
+
+    MPI_Gatherv(buf, n_par * 3, MPI_FLOAT, buf_gl, recvcounts, displs, MPI_FLOAT, 0, comm_);
+    
+    if (my_rank_ == 0) {
+      gsd_write_chunk(handle_, "particles/N", GSD_TYPE_UINT32, 1, 1, 0, &n_par_gl);
+      gsd_write_chunk(handle_, "particles/position", GSD_TYPE_FLOAT, n_par_gl, 3, 0, buf_gl);
+      gsd_end_frame(handle_);
+    }
+    delete[] n_par_arr;
+    delete[] recvcounts;
+    delete[] displs;
+    delete[] buf_gl;
+#endif
+    delete[] buf;
+  }
+}

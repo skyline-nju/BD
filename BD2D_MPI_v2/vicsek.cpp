@@ -14,18 +14,20 @@
  *
  */
 #include "config.h"
-#include "vicsek.h"
 #ifdef VICSEK
+#include "vicsek.h"
 int main(int argc, char* argv[]) {
   MPI_Init(&argc, &argv);
-  double Lx = 10;
-  double Ly = 10;
-  double phi = 30;
-  double gamma = 0.16;
-  double v0 = 2.;
-  double v1 = 0.;
-  double eps = 7.5;
-  double lambda = 0.01;
+  double Lx = 25;
+  double Ly = 25;
+  double phi = 16;
+  double gamma = 1.;
+  //double v0 = 2.;
+  double v0 = 0.2;
+  double xi = 0.5;
+  double rho_c1 = 1000000000;
+  double rho_c2 = 10;
+  double eps = 0.5;
 
   double r_cut = 1.;
   double h0 = 0.05;
@@ -44,15 +46,15 @@ int main(int argc, char* argv[]) {
   int n_par_gl = int(phi * gl_l.x * gl_l.y);
   PeriodicBdyCondi_2 bc(gl_l, proc_size);
   AligningForce_2 f_a(r_cut);
-  EM_VM_Scheme1 integrator(h0, gamma, eps, v0, v1, lambda);
+  EM_VM_Scheme3 integrator(h0, gamma, eps, v0, xi, rho_c1, rho_c2);
 
   {
     // set output
     char prefix[100];
-    snprintf(prefix, 100, "VM_Lx%g_Ly%g_p%g_g%.2f_e%.2f_l%.3f_v0%.2f_v1%.2f", gl_l.x, gl_l.y, phi, gamma, eps, lambda, v0, v1);
+    snprintf(prefix, 100, "VM_Lx%g_Ly%g_p%g_g%.2f_e%.2f_x%.2f_rc%.2f_%.2f", gl_l.x, gl_l.y, phi, gamma, eps, xi, rho_c1, rho_c2);
     char file_info[200];
-    snprintf(file_info, 200, "VM with density-dependent motility;Lx=%g;Ly=%g;phi=%g;N=%d;h=%g;gamma=%g;eps=%g;lambda=%g;v0=%g;v1=%g;data=x,y,theta;format=fff",
-      gl_l.x, gl_l.y, phi, n_par_gl, h0, gamma, eps, lambda, v0, v1);
+    snprintf(file_info, 200, "VM with density-dependent motility;Lx=%g;Ly=%g;phi=%g;N=%d;h=%g;gamma=%g;eps=%g;data=x,y,theta;format=fff",
+      gl_l.x, gl_l.y, phi, n_par_gl, h0, gamma, eps);
 
     int t_first = 0;
     ini_rand_VM(p_arr, n_par_gl, dm, bc, r_cut);
@@ -71,13 +73,13 @@ int main(int argc, char* argv[]) {
     //  exit(1);
     //}
 
-    XyzExporter_2 xy_outer(prefix, t_first, n_step, 200, gl_l, MPI_COMM_WORLD);
-    SnapExporter_2 snap_outer(prefix, t_first, n_step, 200, file_info, MPI_COMM_WORLD);
+    XyzExporter_2 xy_outer(prefix, t_first, n_step,snap_dt, gl_l, MPI_COMM_WORLD);
+    //SnapExporter_2 snap_outer(prefix, t_first, n_step, 200, file_info, MPI_COMM_WORLD);
     LogExporter log_outer(prefix, t_first, n_step, 50000, n_par_gl, MPI_COMM_WORLD);
-    auto exporter = [&log_outer, &snap_outer, &xy_outer](int i_step, const std::vector<node_t>& par_arr) {
+    auto exporter = [&log_outer, &xy_outer](int i_step, const std::vector<node_t>& par_arr) {
       log_outer.record(i_step);
       xy_outer.dump_pos_ori(i_step, par_arr);
-      snap_outer.dump_pos_ori(i_step, par_arr);
+      //snap_outer.dump_pos_ori(i_step, par_arr);
     };
     if (t_first == 0) {
       exporter(0, p_arr);

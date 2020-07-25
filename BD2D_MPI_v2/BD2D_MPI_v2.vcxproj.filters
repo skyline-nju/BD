@@ -51,6 +51,9 @@
     <ClInclude Include="AmABP.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="gsd.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="domain2D.cpp">
@@ -72,6 +75,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="AmABP.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="gsd.c">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

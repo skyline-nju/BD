@@ -14,6 +14,9 @@
 *.out
 *.o
 .vscode
+gsd.c
+gsd.h
+*.gsd
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

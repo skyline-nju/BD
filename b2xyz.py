@@ -61,8 +61,8 @@ def save_as_extxyz(file_in, sep, mod="w", Janus=False):
                 y2 = y + 0.01 * np.sin(theta)
                 fout.write("%d\n%s\n" % (N * 2, comment_line + "Time=%d" % t))
                 lines = [
-                    "N\t%.3f\t%.3f\nO\t%.3f\t%.3f\n" % (x[i], y[i], x2[i], y2[i])
-                    for i in range(x.size)
+                    "N\t%.3f\t%.3f\nO\t%.3f\t%.3f\n" %
+                    (x[i], y[i], x2[i], y2[i]) for i in range(x.size)
                 ]
             fout.writelines(lines)
             print("frame", i_frame, end="\r")
@@ -72,10 +72,7 @@ def save_as_extxyz(file_in, sep, mod="w", Janus=False):
         for i_frame, frame in enumerate(frames):
             t, x, y = frame
             fout.write("%d\n%s\n" % (N, comment_line + "Time=%d" % t))
-            lines = [
-                "N\t%.3ff\t%.3f\n" % (x[i], y[i])
-                for i in range(x.size)
-            ]
+            lines = ["N\t%.3ff\t%.3f\n" % (x[i], y[i]) for i in range(x.size)]
             fout.writelines(lines)
             print("frame", "th frame")
     fout.close()
@@ -99,33 +96,17 @@ def handle_files(folder, sep=10000):
         # except KeyError:
         #     files_fault.append(f)
         save_as_extxyz(f, sep, mode)
-    
+
     print("The follwing files are failed:")
     for f in files_fault:
         print(f)
 
 
 if __name__ == "__main__":
-    # fname = "D:\\data\\ABP_test\\Ly150\\AmABP_Lx2100_Ly150_p0.2_v-50_C6_Dr0.8_t51120000.bin"
-    # fname = "D:\\data\\ABP_test\\Ly150\\AmABP_Lx2100_Ly150_p0.1_v-50_C6_Dr0.8.bin"
-    # fname = "D:\\data\\ABP_test\\Ly150_ini_ordered\\AmABP_Lx2100_Ly150_p0.45_v-50_C6_Dr0.8_t22260000.bin"
-    # fname = "D:\\data\\ABP_test\\Ly300\\AmABP_Lx2100_Ly300_p0.4_v-50_C6_Dr0.8.bin"
-    # fname = "D:\\code\\BD\\BD2D_MPI_v2\\AmABP_Lx100_Ly80_p0.5_v0_C12_Dr3.bin"
-    # fname = "D:\\data\\ABP_test\\Ly600\\AmABP_Lx1050_Ly600_p0.5_v-50_C6_Dr0.8.bin"
-    # fname = "D:\\data\\ABP_test\\Ly600\\AmABP_Lx1050_Ly1050_p0.4_v-50_C6_Dr0.8.bin"
-
-    # fname = "BD2D_MPI_v2\\AmABP_Lx50_Ly150_p0.01_v-50_C6_Dr0.6.bin"
-    # fname = "D:\\data\\ABP_test\\Ly150_ini_ordered\\AmABP_Lx2100_Ly150_p0.45_v-50_C6_Dr0.8_t22260000.bin"
-    # fname = "D:\\data\\ABP_test\\1050_1050\\AmABP_Lx1500_Ly1500_p0.2_v-50_C6_Dr0.8_t14520000.bin"
-    # save_as_extxyz(fname, 20000, "a")
-
     folder = "D:\\data\\AmABP\\ini_ordered2\\Lx1200"
-    # folder = "D:\\data\\AmABP\\phase_diagram\\C12_200_100_ordered"
-    # folder = r"G:\data\AmABP\Lx2400\ini_ordered\new"
-    # folder = r"D:\data\AmABP\cell2"
-    # folder = r"D:\data\AmABP\Lx1200\ini_ordered"
-    # folder = r"D:\data\AmABP\Lx1200\ini_ordered"
-    # folder = r"G:\data\AmABP\Lx2400\ini_ordered"
+    # folder = "D:\\data\\AmABP\\ini_rand2"
+    # folder = "G:\\data\\AmABP2\\ini_ordered\\Lx2400"
+
     handle_files(folder, sep=1)
     # fname = folder + "\\AmABP_Lx200_Ly100_p0.2_v-180_C12_Dr3.bin"
     # # n = decode.get_n_frames(fname)

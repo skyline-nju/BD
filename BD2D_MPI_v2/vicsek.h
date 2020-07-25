@@ -15,6 +15,7 @@
  */
 
 #pragma once
+#include "config.h"
 #include "rand.h"
 #include "domain2D.h"
 #include "particle2D.h"
@@ -214,6 +215,66 @@ void EM_VM_Scheme1::update(TPar& p, const BdyCondi& bc, TRan& myran) const {
   bc.tangle(p.pos);
   p.dtheta = 0.;
 }
+
+class EM_VM_Scheme2 : public EM_VM {
+public:
+  EM_VM_Scheme2(double h, double gamma, double eps, double v0, double xi, double rho_c)
+    : EM_VM(h, gamma, eps, v0), inv_area_xi_(1. / (M_PI * xi)), rho_c_over_xi_(rho_c / xi) {}
+
+  template <typename TPar, class BdyCondi, class TRan>
+  void update(TPar& p, const BdyCondi& bc, TRan& myran) const;
+
+protected:
+  double inv_area_xi_;    // 1 / (PI * sigma^2 * xi)
+  double rho_c_over_xi_;  // rho_c / xi
+};
+
+template <typename TPar, class BdyCondi, class TRan>
+void EM_VM_Scheme2::update(TPar& p, const BdyCondi& bc, TRan& myran) const {
+  //double v = v0_ * exp(-lambda_ * p.n_neighbor) + v1_;
+  //update(p, bc, myran, v);
+  const double v = 0.5 * v0_ * (1. - tanh((p.n_neighbor + 1) * inv_area_xi_ - rho_c_over_xi_));
+  const double dtheta = p.dtheta * gamma_h_ + Dr_ * (myran.doub() - 0.5);
+  p.u.rotate(dtheta);
+  const double dr = v * h_;
+  p.pos.x += dr * p.u.x;
+  p.pos.y += dr * p.u.y;
+  bc.tangle(p.pos);
+  p.dtheta = 0.;
+}
+
+class EM_VM_Scheme3 : public EM_VM {
+public:
+  EM_VM_Scheme3(double h, double gamma, double eps, double v0, double xi, double rho_c1, double rho_c2)
+    : EM_VM(h, gamma, eps, v0), inv_area_xi_(1. / (M_PI * xi)),
+      rho_c1_over_xi_(rho_c1 / xi), rho_c2_over_xi_(rho_c2 / xi) {}
+
+  template <typename TPar, class BdyCondi, class TRan>
+  void update(TPar& p, const BdyCondi& bc, TRan& myran) const;
+
+protected:
+  double inv_area_xi_;     // 1 / (PI * sigma^2 * xi)
+  double rho_c1_over_xi_;  // rho_c1 / xi
+  double rho_c2_over_xi_;  // rho_c2 / xi
+};
+
+template <typename TPar, class BdyCondi, class TRan>
+void EM_VM_Scheme3::update(TPar& p, const BdyCondi& bc, TRan& myran) const {
+  //double v = v0_ * exp(-lambda_ * p.n_neighbor) + v1_;
+  //update(p, bc, myran, v);
+  const double rho_over_xi = (p.n_neighbor + 1) * inv_area_xi_;
+  double v1 = 0.1;
+  const double v = 0.5 * (v0_ - v1) * (1. - tanh(rho_over_xi - rho_c1_over_xi_)) + v1;
+  const double aligning = - tanh(rho_over_xi - rho_c2_over_xi_);
+  const double dtheta = p.dtheta * gamma_h_ * aligning + Dr_ * (myran.doub() - 0.5);
+  p.u.rotate(dtheta);
+  const double dr = v * h_;
+  p.pos.x += dr * p.u.x;
+  p.pos.y += dr * p.u.y;
+  bc.tangle(p.pos);
+  p.dtheta = 0.;
+}
+
 
 template <typename TDomain, typename TPar, typename BdyCondi>
 void ini_rand_VM(std::vector<BiNode<TPar>>& p_arr, int n_par_gl, TDomain& dm,
