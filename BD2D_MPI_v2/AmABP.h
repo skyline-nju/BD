@@ -2,8 +2,8 @@
  * @file AmABP.h
  * @author Yu Duan (duanyu.nju@qq.com)
  * @brief Active Brownian particles with Amphiphilic force.
- * @version 0.1
- * @date 2020-06-29
+ * @version 0.2
+ * @date 2020-07-26
  * 
  * @copyright Copyright (c) 2020
  * 

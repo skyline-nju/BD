@@ -90,7 +90,7 @@ void ini_rand(std::vector<BiNode<TPar>>& p_arr, int n_par_gl, TDomain& dm,
 template <typename TPar, typename TDomain>
 void ini_from_gsd(const std::string& file_in, std::vector<BiNode<TPar>>& p_arr,
                   int n_par_gl, const TDomain& dm, bool oppsite_ori, double sigma = 1.) {
-  GSD_Snapshot_2 snap(file_in, 0, 10000, 100, dm.get_gl_l(), dm.get_comm(), "r");
+  Snap_GSD_2 snap(file_in, 100, dm.get_gl_l(), "r", dm.get_comm());
   int buf_size = n_par_gl * 3;
   float* buf = new float[buf_size];
   snap.load_frame(-1, buf, buf_size);
@@ -110,73 +110,4 @@ void ini_from_gsd(const std::string& file_in, std::vector<BiNode<TPar>>& p_arr,
       p_arr.push_back(p);
     }
   }
-
-}
-template <typename TPar, typename TDomain>
-void ini_from_file(const std::string& file_in, std::vector<BiNode<TPar>>& p_arr,
-                   int n_par_gl, int &t_last, const TDomain& dm, double sigma = 1.) {
-  int float_per_par = 0;
-  if (typeid(TPar) == typeid(BP_2)) {
-    float_per_par = 2;
-  } else if (typeid(TPar) == typeid(BP_theta_2) ||
-    typeid(TPar) == typeid(BP_theta_tau_2) ||
-    typeid(TPar) == typeid(BP_u_2) ||
-    typeid(TPar) == typeid(BP_u_tau_2)) {
-    float_per_par = 3;
-  } else {
-    std::cout << "Wrong particle type when reading from file\n";
-    exit(2);
-  }
-  int tot_proc = dm.get_proc_size();
-  int my_rank = dm.get_proc_rank();
-  MPI_Comm comm = dm.get_comm();
-
-  int buf_size = n_par_gl * float_per_par;
-  float* buf = new float[buf_size];
-  if (my_rank == 0) {
-    load_last_frame(file_in, buf, t_last);
-  }
-  MPI_Bcast(buf, buf_size, MPI_FLOAT, 0, comm);
-  MPI_Bcast(&t_last, 1, MPI_INT, 0, comm);
-  PeriodicBdyCondi_2 pbc(dm.get_gl_l());
-  const Box_2<double> box = dm.get_box();
-  int n_max = int(box.l.x * box.l.y / (sigma * sigma) * 5);
-  p_arr.reserve(n_max);
-  int buf_pos = 0;  
-  while (buf_pos < buf_size) {
-    BiNode<TPar> p{};
-    p.load_from_file(buf, buf_pos);
-    pbc.tangle(p.pos);
-    if (box.within(p.pos)) {
-      p_arr.push_back(p);
-    }
-  }
-
-  //std::cout << "buf size = " << buf_size << ", buf_pos = " << buf_pos
-  //  << ", box = " << box << ", gl_l = " << dm.get_gl_l() << ", particle num = " << p_arr.size() << std::endl;
-
-  int n_par = static_cast<int>(p_arr.size());
-  int* n_par_arr = new int[tot_proc];
-  MPI_Gather(&n_par, 1, MPI_INT, n_par_arr, 1, MPI_INT, 0, comm);
-  if (my_rank == 0) {
-    std::cout << "load from " << add_suffix(file_in, ".bin") 
-      << ", particle num: " << n_par_gl << " = " << n_par_arr[0];
-    int n_sum = n_par_arr[0];
-    for (int i = 1; i < tot_proc; i++) {
-      std::cout << " + " << n_par_arr[i];
-      n_sum += n_par_arr[i];
-    }
-    std::cout << "\n";
-    if (n_sum == n_par_gl) {
-      std::cout << "initial t = " << t_last << "\n";
-      std::cout << "************************************\n" << std::endl;
-    } else {
-      std::cout << "Error, particle num = " << n_sum << ", while " << n_par_gl << " particles are needed" << std::endl;
-      exit(6);
-    }
-    
-  }
-  delete[] buf;
-  delete[] n_par_arr;
-  MPI_Barrier(comm);
 }

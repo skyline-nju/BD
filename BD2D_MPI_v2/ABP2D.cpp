@@ -44,19 +44,17 @@ int main(int argc, char* argv[]) {
     char file_info[200];
     snprintf(file_info, 200, "ABP2D with PBC;Lx=%g;Ly=%g;phi=%g;N=%d;Force=%s;h=%g;data=x,y;format=ff",
       gl_l.x, gl_l.y, phi, n_par_gl, f_wca.get_info().c_str(), h0);
-    XyzExporter_2 xy_outer(prefix, 0, n_step, 10000, gl_l, MPI_COMM_WORLD);
+    //XyzExporter_2 xy_outer(prefix, 0, n_step, 10000, gl_l, MPI_COMM_WORLD);
     //SnapExporter_2 snap_outer(prefix, 0, n_step, 1000, file_info, MPI_COMM_WORLD);
-    LogExporter log_outer(prefix, 0, n_step, 10000, n_par_gl, MPI_COMM_WORLD);
+    Log log(prefix, 10000, n_par_gl, "w", MPI_COMM_WORLD);
 
-    auto exporter = [&log_outer, &xy_outer](int i_step, const std::vector<BiNode<BP_u_2>>& par_arr) {
-      log_outer.record(i_step);
-      xy_outer.dump_pos(i_step, par_arr);
-      //snap_outer.dump_pos(i_step, par_arr);
+    auto exporter = [&log](int i_step, const std::vector<BiNode<BP_u_2>>& par_arr) {
+      log.dump(i_step);
     };
     exporter(0, p_arr);
     Ranq2 myran(1);
     for (int i = 1; i <= n_step; i++) {
-      dm.cal_force(p_arr, cl, f_wca, bc);
+      dm.cal_force(p_arr, cl, f_wca, bc, false);
       dm.integrate(p_arr, cl, integrator, bc, myran);
       dm.shell_sorting(p_arr, cl, 10000);
       exporter(i, p_arr);

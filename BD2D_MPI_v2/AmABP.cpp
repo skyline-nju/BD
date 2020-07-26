@@ -2,8 +2,8 @@
  * @file AmABP.cpp
  * @author Yu Duan (duanyu.nju@qq.com)
  * @brief Active Brownian particles with Amphiphilic force.
- * @version 0.1
- * @date 2020-06-29
+ * @version 0.2
+ * @date 2020-07-26
  *
  * @copyright Copyright (c) 2020
  *
@@ -44,11 +44,11 @@ std::string AmphiphilicWCA_2::get_info() const {
 int main(int argc, char* argv[]) {
   MPI_Init(&argc, &argv);
 #ifdef _MSC_VER
-  double Lx = 300;
+  double Lx = 200;
   double Ly = 100;
   double phi = 0.2;
   double Pe = -180;
-  int n_step = 500000;
+  int n_step = 50000;
   double lambda = 3.;
   double C = 12;
   double epsilon = 10.;
@@ -87,7 +87,6 @@ int main(int argc, char* argv[]) {
   PeriodicBdyCondi_2 bc(gl_l, proc_size);
   AmphiphilicWCA_2 f_Am(epsilon, lambda, C, r_cut);
   EM_ABD_aniso integrator(h0, Pe);
-
   integrator.set_Dr(Dr);
 
   {
@@ -96,7 +95,6 @@ int main(int argc, char* argv[]) {
     char prefix[100];
     snprintf(prefix, 100, "AmABP_Lx%g_Ly%g_p%.3f_v%g_C%g_Dr%g", gl_l.x, gl_l.y, phi, Pe, C, Dr);
 
-    int t_first = 0;
     if (ini_mode == "w") {
       ini_rand(p_arr, n_par_gl, dm, bc);
     } else if (ini_mode == "a") {
@@ -106,12 +104,20 @@ int main(int argc, char* argv[]) {
       exit(1);
     }
 
-    GSD_Snapshot_2 snap_outer(prefix, t_first, n_step, snap_dt, gl_l, MPI_COMM_WORLD, ini_mode);
-    std::cout << "hello, world!" << std::endl;
-    LogExporter log_outer(prefix, t_first, n_step, 50000, n_par_gl, MPI_COMM_WORLD);
-    auto exporter = [&log_outer, &snap_outer, oppsite_ori_flag](int i_step, const std::vector<node_t>& par_arr) {
-      log_outer.record(i_step);
-      snap_outer.dump(i_step, par_arr, oppsite_ori_flag);
+    Snap_GSD_2 snap(prefix, snap_dt, gl_l, ini_mode, MPI_COMM_WORLD);
+    Log log(prefix, 1000, n_par_gl, ini_mode, MPI_COMM_WORLD);
+    log.fout << "h0=" << h0 << "\n";
+    log.fout << "L=(" << Lx << ", " << Ly << ")\n";
+    log.fout << "phi=" << phi << "\n";
+    log.fout << "Pe=" << Pe << "\n";
+    log.fout << "C=" << C << "\n";
+    log.fout << "Dr=" << Dr << "\n";
+    log.fout << "epsilon=" << epsilon << "\n";
+    log.fout << "r_cut=" << r_cut << "\n";
+
+    auto exporter = [&log, &snap, oppsite_ori_flag](int i_step, const std::vector<node_t>& par_arr) {
+      log.dump(i_step);
+      snap.dump(i_step, par_arr, oppsite_ori_flag);
     };
     if (ini_mode == "w") {
       exporter(0, p_arr);

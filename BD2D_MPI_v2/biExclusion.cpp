@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
   double h0 = 1e-2;
   int n_step = 20000;
   int tot_proc;
-  std::string ini_mode = "rand";
+  std::string ini_mode = "w";
   //std::string ini_mode = "file";
 
   MPI_Comm_size(MPI_COMM_WORLD, &tot_proc);
@@ -70,29 +70,19 @@ int main(int argc, char* argv[]) {
     snprintf(file_info, 200, "Self-propelled cells with PBC;Lx=%g;Ly=%g;phi=%g;N=%d;h=%g;Dr=%g;data=x,y,theta;format=fff",
       gl_l.x, gl_l.y, phi, n_par_gl, h0, Dr);
 
-
     int t_first = 0;
-    if (ini_mode == "rand") {
+    if (ini_mode == "w") {
       ini_rand(p_arr, n_par_gl, dm, bc);
-    } else if (ini_mode == "file") {
-      ini_from_file(prefix, p_arr, n_par_gl, t_first, dm);
-    } else if (isdigit(ini_mode.c_str()[0])) {
-      char prefix2[100];
-      snprintf(prefix2, 100, "%s_t%d", prefix, atoi(ini_mode.c_str()));
-      //snprintf(prefix, 100, "%s", prefix2);
-      ini_from_file(prefix2, p_arr, n_par_gl, t_first, dm);
-    } else {
+    } else if (ini_mode == "a") {
+      ini_from_gsd(prefix, p_arr, n_par_gl, dm, false);
+    } else{
       std::cout << "Wrong ini mode, which should be one of 'rand', 'file'." << std::endl;
       exit(1);
     }
 
-    XyzExporter_2 xy_outer(prefix, t_first, n_step, 200, gl_l, MPI_COMM_WORLD);
-    SnapExporter_2 snap_outer(prefix, t_first, n_step, 200, file_info, MPI_COMM_WORLD);
-    LogExporter log_outer(prefix, t_first, n_step, 50000, n_par_gl, MPI_COMM_WORLD);
-    auto exporter = [&log_outer, &snap_outer, &xy_outer](int i_step, const std::vector<node_t>& par_arr) {
-      log_outer.record(i_step);
-      xy_outer.dump_pos_ori(i_step, par_arr);
-      snap_outer.dump_pos_ori(i_step, par_arr);
+    Log log(prefix, 50000, n_par_gl, "w", MPI_COMM_WORLD);
+    auto exporter = [&log](int i_step, const std::vector<node_t>& par_arr) {
+      log.dump(i_step);
     };
     if (t_first == 0) {
       exporter(0, p_arr);
