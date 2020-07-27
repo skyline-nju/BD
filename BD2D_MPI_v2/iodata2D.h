@@ -127,7 +127,7 @@ public:
 
   template <typename TPar>
   void dump(int i_step, const std::vector<TPar>& p_arr, bool oppsite_ori);
-
+ 
   void load_frame(int i_frame, float* buf, int buf_size);
 
 private:
@@ -140,6 +140,17 @@ void Snap_GSD_2::dump(int i_step, const std::vector<TPar>& p_arr, bool oppsite_o
     float* buf_gl = nullptr;
     int n_par_gl = gather_particles(p_arr, &buf_gl, comm_, oppsite_ori);
     if (my_rank_ == 0) {
+      size_t n_frame = gsd_get_nframes(handle_);
+      size_t i_frame;
+      if (n_frame == 0) {
+        i_frame = 0;
+      } else {
+        const gsd_index_entry* chunk = gsd_find_chunk(handle_, n_frame - 1, "configuration/step");
+        gsd_read_chunk(handle_, &i_frame, chunk);
+        i_frame++;
+      }
+      std::cout << "dump frame " << i_frame << std::endl;
+      gsd_write_chunk(handle_, "configuration/step", GSD_TYPE_UINT64, 1, 1, 0, &i_frame);
       gsd_write_chunk(handle_, "particles/N", GSD_TYPE_UINT32, 1, 1, 0, &n_par_gl);
       gsd_write_chunk(handle_, "particles/position", GSD_TYPE_FLOAT, n_par_gl, 3, 0, buf_gl);
       gsd_end_frame(handle_);

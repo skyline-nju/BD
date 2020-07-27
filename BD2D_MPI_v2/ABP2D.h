@@ -88,9 +88,8 @@ void ini_rand(std::vector<BiNode<TPar>>& p_arr, int n_par_gl, TDomain& dm,
 }
 
 template <typename TPar, typename TDomain>
-void ini_from_gsd(const std::string& file_in, std::vector<BiNode<TPar>>& p_arr,
-                  int n_par_gl, const TDomain& dm, bool oppsite_ori, double sigma = 1.) {
-  Snap_GSD_2 snap(file_in, 100, dm.get_gl_l(), "r", dm.get_comm());
+void ini_from_gsd(std::vector<BiNode<TPar>>& p_arr, int n_par_gl, Snap_GSD_2& snap,
+                  const TDomain& dm, bool oppsite_ori, double sigma = 1.) {
   int buf_size = n_par_gl * 3;
   float* buf = new float[buf_size];
   snap.load_frame(-1, buf, buf_size);

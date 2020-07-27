@@ -35,14 +35,14 @@ BaseExporter::BaseExporter(int sep) : sep_(sep) {}
 #endif
 
 Log::Log(const std::string& fname, int sep, int n_par_gl,
-  const std::string& open_flag, MPI_Comm group_comm)
-  : BaseExporter(sep, group_comm), n_par_(n_par_gl) {
+         const std::string& open_flag, MPI_Comm group_comm)
+         : BaseExporter(sep, group_comm), n_par_(n_par_gl) {
   t_start_ = std::chrono::system_clock::now();
   if (is_root()) {
     std::string filename = add_suffix(fname, ".log");
-    if (open_flag == "w") {
+    if (open_flag == "new") {
       fout.open(filename);
-    } else if (open_flag == "a") {
+    } else if (open_flag == "restart") {
       fout.open(filename, std::ios::app);
     }
     auto start_time = std::chrono::system_clock::to_time_t(t_start_);
@@ -102,17 +102,15 @@ Snap_GSD_2::Snap_GSD_2(const std::string& filename, int sep, const Vec_2<double>
   snprintf(fname, 100, "%s", add_suffix(filename, ".gsd").c_str());
   if (is_root()) {
     handle_ = new gsd_handle;
-    if (open_flag == "w") {
+    if (open_flag == "new") {
       gsd_create(fname, "cpp", "hoomd", version);
       gsd_open(handle_, fname, GSD_OPEN_READWRITE);
       float box[6] = { gl_l.x, gl_l.y, 1, 0, 0, 0 };
       gsd_write_chunk(handle_, "configuration/box", GSD_TYPE_FLOAT, 6, 1, 0, box);
-    } else if (open_flag == "r") {
-      gsd_open(handle_, fname, GSD_OPEN_READONLY);
-    } else if (open_flag == "a") {
-      gsd_open(handle_, fname, GSD_OPEN_APPEND);
+    } else if (open_flag == "restart") {
+      gsd_open(handle_, fname, GSD_OPEN_READWRITE);
     } else {
-      std::cout << "Wrong open flag, must be one of 'a', 'w' or 'r'!" << std::endl;
+      std::cout << "Wrong open flag, which must be one of 'new' or 'restart'!" << std::endl;
       exit(1);
     }
   }
@@ -128,18 +126,20 @@ Snap_GSD_2::~Snap_GSD_2() {
 void Snap_GSD_2::load_frame(int i_frame, float* buf, int buf_size) {
   if (my_rank_ == 0) {
     int n_frame = gsd_get_nframes(handle_);
+    std::cout << "nframes = " << n_frame << std::endl;
     if (i_frame >= n_frame) {
       std::cout << i_frame << "should be less than total frames " << n_frame << std::endl;
       exit(1);
     } else if (i_frame == -1) {
       i_frame = n_frame - 1;
     }
-    std::cout << "load " << i_frame << "frame" << std::endl;
+    std::cout << "load " << i_frame << " frame" << std::endl;
     const gsd_index_entry* chunk_N = gsd_find_chunk(handle_, i_frame, "particles/N");
     unsigned int n;
     gsd_read_chunk(handle_, &n, chunk_N);
     if (n * 3 != buf_size) {
-      std::cout << "buf size is not matched with particle numbers" << std::endl;
+      std::cout << "particle number = " << n << " is not matched with buf size = ";
+      std::cout << buf_size << std::endl;
       exit(1);
     }
     const gsd_index_entry* chunk = gsd_find_chunk(handle_, i_frame, "particles/position");
@@ -167,7 +167,7 @@ XyzExporter_2::XyzExporter_2(const std::string& outfile, int sep,
                              MPI_Comm group_comm)
                              : BaseExporter(sep, group_comm), gl_l_(gl_l) {
   if (is_root()) {
-    if (open_flag == "w") {
+    if (open_flag == "new") {
       fout_.open(add_suffix(outfile, ".extxyz"));
     } else {
       fout_.open(add_suffix(outfile, ".extxyz"), std::ios::app);
