@@ -35,6 +35,7 @@ public:
   template <typename TPar, typename PairForce, typename BdyCondi>
   void cal_force(std::vector<BiNode<TPar>>& p_arr, CellList_2<TPar>& cl, 
                  const PairForce& f12, const BdyCondi& bc, bool need_ori);
+
   template <typename TPar, typename TInteg, typename BdyCondi, typename TRan>
   void integrate(std::vector<BiNode<TPar>>& p_arr, CellList_2<TPar>& cl,
                  const TInteg& integrator, const BdyCondi& bc, TRan& myran);

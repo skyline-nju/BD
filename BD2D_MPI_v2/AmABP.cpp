@@ -84,7 +84,11 @@ int main(int argc, char* argv[]) {
   Domain_2 dm(gl_l, proc_size, MPI_COMM_WORLD);
   std::vector<node_t> p_arr;
   int n_par_gl = int(phi * 4. * gl_l.x * gl_l.y / M_PI);
+#ifdef WALL_Y
+  PBCxWally bc(gl_l, epsilon, proc_size);
+#else
   PeriodicBdyCondi_2 bc(gl_l, proc_size);
+#endif
   AmphiphilicWCA_2 f_Am(epsilon, lambda, C, r_cut);
   EM_ABD_aniso integrator(h0, Pe);
   integrator.set_Dr(Dr);

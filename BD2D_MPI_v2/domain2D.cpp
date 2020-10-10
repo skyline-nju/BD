@@ -100,6 +100,13 @@ void Domain_2::find_neighbor() {
     }
     neighbor_[2] = rank.x + y_prev * proc_size_vec_.x;
     neighbor_[3] = rank.x + y_next * proc_size_vec_.x;
+#ifdef WALL_Y
+    if (rank.y == 0) {
+      neighbor_[2] = MPI_PROC_NULL;
+    } else if (rank.y == proc_size_vec_.y - 1) {
+      neighbor_[3] = MPI_PROC_NULL;
+    }
+#endif
   } else {
     neighbor_[2] = neighbor_[3] = MPI_PROC_NULL;
   }

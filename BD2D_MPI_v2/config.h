@@ -12,3 +12,5 @@
 //#define VICSEK
 
 //#define INI_ORDERED
+
+#define WALL_Y

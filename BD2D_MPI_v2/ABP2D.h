@@ -45,10 +45,16 @@ void ini_rand(std::vector<BiNode<TPar>>& p_arr, int n_par_gl, TDomain& dm,
     l.x -= sigma * 0.5;
     origin.x += sigma * 0.5;
   }
+#ifdef WALL_Y
+  l.y -= sigma;
+  origin.y += sigma * 0.5;
+#else
   if (proc_size_vec.y > 1) {
     l.y -= sigma * 0.5;
     origin.y += sigma * 0.5;
   }
+#endif
+
   Ranq2 myran(1 + my_rank);
 
   if (!avoid_overlap || (n_par_gl < box.l.x * box.l.y / (sigma * sigma) / 2)) {

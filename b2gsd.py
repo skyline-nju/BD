@@ -55,12 +55,17 @@ def convert(fin, fout=None):
 
 
 if __name__ == "__main__":
-    folder_in = "G:/data/AmABP2/ini_ordered"
-    folder_out = "D:/data/AmABP2/ini_ordered"
+    # folder_in = "G:/data/AmABP/phase_diagram/phi0.55_200_100"
+    # folder_out = "D:/data/AmABP/phase_diagram/phi0.55_200_100"
+    # folder_in = "G:/data/AmABP/Lx600/ini_ordered"
+    folder_in = "G:/data/AmABP/Lx2400/ini_rand"
+    folder_out = "D:/data/AmABP2/tmp2"
+
     files = glob.glob("%s/*.bin" % folder_in)
     for fin in files:
+        phi = float(os.path.basename(fin).split("_")[3].lstrip("p"))
         fout = "%s/%s" % (folder_out, os.path.basename(fin).replace(
-            ".bin", ".gsd"))
+            ".bin", ".gsd").replace("p%g" % phi, "p%.3f" % phi))
         if os.path.exists(
                 fout) and os.stat(fout).st_mtime > os.stat(fin).st_mtime:
             continue

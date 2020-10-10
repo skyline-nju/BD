@@ -181,7 +181,7 @@ private:
 
 template <typename TPar>
 void XyzExporter_2::dump_pos_ori(int i_step, const std::vector<TPar>& par_arr) {
-  if (need_dump()) {
+  if (need_dump(i_step)) {
     float* buf_gl = nullptr;
     int n_par_gl = gather_particles(par_arr, &buf_gl, comm_, true);
     if (is_root) {
